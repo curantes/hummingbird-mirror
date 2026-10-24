@@ -1,19 +1,16 @@
 {
-  "$schema": "https://renovatebot.com",
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:best-practices"
   ],
   "assignees": ["@curantes/maintainers"],
-  "ignoreDeps": [
-    "slsa-framework/slsa-github-generator"
-  ],
   "packageRules": [
     {
       "matchDatasources": ["docker"],
       "pinDigests": true
     },
     {
-      "matchPackagePatterns": ["^registry\\.access\\.redhat\\.com/hi/"],
+      "matchPackageNames": ["/^registry\\.access\\.redhat\\.com/hi//"],
       "groupName": "redhat-hummingbird-base-images",
       "commitMessageTopic": "Red Hat Hummingbird base images"
     },

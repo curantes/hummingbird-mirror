@@ -1,5 +1,5 @@
 # Core runtime base image from Red Hat Container Registry
-FROM registry.access.redhat.com/hi/core-runtime:latest@sha256:0cbbc4cd3b547852efe5547b1c18603ef4028977f8494c9008ee9f7e68e7e20e
+FROM registry.access.redhat.com/hi/core-runtime:latest@sha256:329ff8f46fe69f036b96c3463272aa778a6df6a4f7570f080fd248a414652b6e
 
 LABEL org.opencontainers.image.title="Hardened Core Runtime Base Image (based on Red Hat Core Runtime)" \
       org.opencontainers.image.vendor="Curantes" \

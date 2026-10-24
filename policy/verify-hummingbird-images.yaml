@@ -3,30 +3,47 @@ kind: ClusterPolicy
 metadata:
   name: verify-hummingbird-images
   annotations:
-    policies.kyverno.io/title: Verify Hardened Hummingbird OCI Attestations
-    policies.kyverno.io/subject: Pod, Deployment, StatefulSet
+    policies.kyverno.io/title: Verify Hardened Hummingbird Images
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/minversion: 1.13.0
     policies.kyverno.io/description: >-
       Ensures that images pulled from ghcr.io/curantes/hardened-hummingbird-images/*
-      have valid SLSA build provenance attestations signed keylessly by GitHub Actions using Sigstore.
+      are signed keylessly by the reusable build workflow on main and carry a
+      SLSA build provenance attestation issued to the same identity.
 spec:
   validationFailureAction: Enforce
   background: true
+  webhookTimeoutSeconds: 30
   rules:
-    - name: verify-slsa-attestation
+    - name: verify-signature-and-provenance
       match:
         any:
           - resources:
               kinds:
                 - Pod
       verifyImages:
+        # Cosign keyless signature (classic .sig format)
         - imageReferences:
-            - "ghcr.io/curantes/hardened-hummingbird-images/*:*"
+            - "ghcr.io/curantes/hardened-hummingbird-images/*"
+          mutateDigest: true
+          verifyDigest: true
           attestors:
             - entries:
                 - keyless:
                     issuer: https://token.actions.githubusercontent.com
-                    subject: "https://github.com/curantes/hardened-hummingbird-images/.github/workflows/*@refs/heads/main"
+                    subject: "https://github.com/curantes/hardened-hummingbird-images/.github/workflows/build-image.yml@refs/heads/main"
                     rekor:
                       url: https://rekor.sigstore.dev
+        # GitHub artifact attestation (Sigstore bundle stored as OCI referrer)
+        - imageReferences:
+            - "ghcr.io/curantes/hardened-hummingbird-images/*"
+          type: SigstoreBundle
           attestations:
             - predicateType: https://slsa.dev/provenance/v1
+              attestors:
+                - entries:
+                    - keyless:
+                        issuer: https://token.actions.githubusercontent.com
+                        subject: "https://github.com/curantes/hardened-hummingbird-images/.github/workflows/build-image.yml@refs/heads/main"
+                        rekor:
+                          url: https://rekor.sigstore.dev

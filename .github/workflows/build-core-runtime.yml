@@ -5,163 +5,38 @@ on:
     branches: [ "main" ]
     paths:
       - 'images/core-runtime/**'
+      - 'policy/keys/**'
+      - '.github/workflows/build-image.yml'
       - '.github/workflows/build-core-runtime.yml'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'images/core-runtime/**'
+      - 'policy/keys/**'
+      - '.github/workflows/build-image.yml'
       - '.github/workflows/build-core-runtime.yml'
+  # Weekly re-audit: re-verifies the upstream signature and rescans for newly
+  # disclosed CVEs. Base image updates arrive as Renovate digest bumps.
   schedule:
     - cron: '0 3 * * 1'
   workflow_dispatch:
 
-permissions:
-  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
 
 jobs:
-  build-and-audit:
-    name: Build & Audit Core Runtime
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Lint Containerfile (Hadolint)
-        uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
-        with:
-          dockerfile: images/core-runtime/Containerfile
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-
-      - name: Build Local Image for Testing and Audit
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: ./images/core-runtime
-          file: ./images/core-runtime/Containerfile
-          load: true
-          platforms: linux/amd64
-          tags: hardened-core-runtime:test
-
-      - name: Run Container Sanity Tests
-        run: |
-          echo "Testing non-root UID and GID (10001:10001)..."
-          USER_GID=$(docker run --rm hardened-core-runtime:test id -u):$(docker run --rm hardened-core-runtime:test id -g)
-          if [ "$USER_GID" != "10001:10001" ]; then
-            echo "Unexpected UID:GID: $USER_GID (expected 10001:10001)"
-            exit 1
-          fi
-
-          echo "Testing shell execution..."
-          OUT=$(docker run --rm hardened-core-runtime:test echo hello)
-          if [ "$OUT" != "hello" ]; then
-            echo "Unexpected output: $OUT (expected 'hello')"
-            exit 1
-          fi
-
-          echo "Testing dynamic linking (libc.so)..."
-          docker run --rm hardened-core-runtime:test ldconfig -p | grep -q 'libc.so' || {
-            echo "libc.so not found in ldconfig cache"
-            exit 1
-          }
-
-          echo "Testing locale C.UTF-8..."
-          docker run --rm hardened-core-runtime:test locale | grep -q 'C.UTF-8' || {
-            echo "Locale C.UTF-8 not configured"
-            exit 1
-          }
-
-          echo "All container sanity tests passed successfully."
-
-      - name: Vulnerability Audit with Trivy (SARIF)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: 'hardened-core-runtime:test'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          exit-code: '0'
-          ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
-
-      - name: Upload Trivy Scan Results to GitHub Security
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  publish-image:
-    name: Publish Production Image
-    needs: build-and-audit
-    if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+  factory:
+    name: Core Runtime
+    uses: ./.github/workflows/build-image.yml
     permissions:
       contents: read
       packages: write
-      id-token: write      # Required for SLSA attestation via GitHub OIDC
-      attestations: write  # Required to record build attestations
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Metadata
-        id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
-        with:
-          images: ghcr.io/${{ github.repository }}/core-runtime
-          tags: |
-            type=raw,value=latest
-            type=sha,format=short
-            type=raw,value={{date 'YYYYMMDD'}}
-            type=ref,event=tag
-
-      - name: Build and Push Image
-        id: build-push
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: ./images/core-runtime
-          file: ./images/core-runtime/Containerfile
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Generate Syft SBOM (SPDX JSON)
-        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
-        with:
-          image: ghcr.io/${{ github.repository }}/core-runtime@${{ steps.build-push.outputs.digest }}
-          format: spdx-json
-          output-file: ./sbom-core-runtime.spdx.json
-
-      - name: Attest SBOM
-        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
-        with:
-          subject-name: ghcr.io/${{ github.repository }}/core-runtime
-          subject-digest: ${{ steps.build-push.outputs.digest }}
-          sbom-path: ./sbom-core-runtime.spdx.json
-          push-to-registry: true
-
-      - name: Generate Artifact Attestation (SLSA Provenance)
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
-        with:
-          subject-name: ghcr.io/${{ github.repository }}/core-runtime
-          subject-digest: ${{ steps.build-push.outputs.digest }}
-          push-to-registry: true
-
-      - name: Upload SBOM as Run Artifact
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: sbom-core-runtime-spdx
-          path: ./sbom-core-runtime.spdx.json
+      id-token: write
+      attestations: write
+      security-events: write
+    with:
+      image: core-runtime
+      publish: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
