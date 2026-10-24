@@ -262,9 +262,20 @@ jobs:
             exit 1
           fi
           cosign verify --key "$UPSTREAM_KEY" --insecure-ignore-tlog "$MIRROR_IMAGE@$DIGEST" > /dev/null
+          # GHCR updates the referrers fallback index read-modify-write and can
+          # serve a stale index, occasionally dropping the bundle; repair and retry.
+          for attempt in 1 2 3; do
+            if cosign verify-attestation --key "$UPSTREAM_KEY" --insecure-ignore-tlog \
+                --type spdx "$MIRROR_IMAGE@$DIGEST" > /dev/null; then
+              echo "Mirrored copy keeps digest $DIGEST and verifies with the Red Hat key"
+              exit 0
+            fi
+            echo "::warning::SBOM attestation missing on mirror (attempt $attempt); repairing referrers"
+            sleep $((attempt * 10))
+            regctl image copy --referrers --force-recursive "$REF" "$MIRROR_IMAGE@$DIGEST" || true
+          done
           cosign verify-attestation --key "$UPSTREAM_KEY" --insecure-ignore-tlog \
             --type spdx "$MIRROR_IMAGE@$DIGEST" > /dev/null
-          echo "Mirrored copy keeps digest $DIGEST and verifies with the Red Hat key"
 
       - name: Check for Existing Approval
         id: approval
