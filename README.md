@@ -62,7 +62,7 @@ ENTRYPOINT ["java", "-jar", "/app/app.jar"]
    - a Syft SBOM, with a check that Hummingbird OS and its RPMs are detected
    - a Grype gate that **fails on fixable HIGH/CRITICAL vulnerabilities**
 3. **Promote** (pushes to `main` and manual dispatch only):
-   1. Copy the image by digest with `regctl image copy --referrers --digest-tags`. This keeps Red Hat's cosign signatures and attestations, plus their Sigstore bundle referrers.
+   1. Copy the image by digest with `regctl image copy --referrers`, plus Red Hat's cosign `.sig`/`.att`/`.sbom` tags. This keeps their Sigstore bundle referrers, including the SBOM attestation that cosign 3 verifies.
    2. Re-verify the copy against Red Hat's key.
    3. Attest a VSA (`https://slsa.dev/verification_summary/v1`).
    4. Only then move the tags.
