@@ -1,0 +1,85 @@
+name: Mirror - Hardened Images
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'mirror/**'
+      - 'tests/**'
+      - 'policy/keys/**'
+      - '.github/workflows/mirror.yml'
+      - '.github/workflows/verify-promote.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'mirror/**'
+      - 'tests/**'
+      - 'policy/keys/**'
+      - '.github/workflows/mirror.yml'
+      - '.github/workflows/verify-promote.yml'
+  # Weekly re-audit of every approved digest: re-verifies the upstream
+  # signature and rescans for newly disclosed CVEs without promoting.
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+env:
+  # Mirror destination; the promote job logs in to its registry.
+  MIRROR: ghcr.io/curantes/hummingbird-mirror
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      mirror: ${{ steps.plan.outputs.mirror }}
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read Allowlist
+        id: plan
+        run: |
+          MATRIX="$(yq -o=json -I=0 '[.images[] | {"name": .name, "source": .source}]' mirror/images.yaml \
+            | jq -c 'map(. + {tag: (.source | split("@")[0] | split(":") | last)})')"
+          DUPES="$(jq -r 'group_by(.name + ":" + .tag) | map(select(length > 1) | .[0].name + ":" + .[0].tag) | join(", ")' <<< "$MATRIX")"
+          if [ -n "$DUPES" ]; then
+            echo "Duplicate mirror tags in mirror/images.yaml: $DUPES"
+            exit 1
+          fi
+          jq -r '.[] | "- \(.name):\(.tag)"' <<< "$MATRIX"
+          {
+            echo "matrix=$MATRIX"
+            echo "mirror=$MIRROR"
+          } >> "$GITHUB_OUTPUT"
+
+  verify-promote:
+    name: ${{ matrix.image.name }}:${{ matrix.image.tag }}
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    uses: ./.github/workflows/verify-promote.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      security-events: write
+    with:
+      name: ${{ matrix.image.name }}
+      source: ${{ matrix.image.source }}
+      mirror: ${{ needs.plan.outputs.mirror }}
+      promote: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}

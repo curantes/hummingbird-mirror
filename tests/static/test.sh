@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # Sanity tests for the distroless static image.
-# Usage: test.sh <image-ref>   (set CONTAINER_ENGINE=podman to run locally)
+# Usage: test.sh <image-ref> [tag]   (set CONTAINER_ENGINE=podman to run locally)
 set -euo pipefail
 
-IMAGE="${1:?usage: $0 <image-ref>}"
+IMAGE="${1:?usage: $0 <image-ref> [tag]}"
 ENGINE="${CONTAINER_ENGINE:-docker}"
 WORKDIR="$(mktemp -d)"
 
-echo "Testing non-root execution context (10001:10001)..."
+echo "Testing non-root execution context (65532)..."
 USER_CONF="$("$ENGINE" inspect --format='{{.Config.User}}' "$IMAGE")"
-if [ "$USER_CONF" != "10001:10001" ]; then
-  echo "Unexpected User configuration: $USER_CONF (expected 10001:10001)"
+if [ "$USER_CONF" != "65532" ]; then
+  echo "Unexpected User configuration: $USER_CONF (expected 65532)"
   exit 1
 fi
 

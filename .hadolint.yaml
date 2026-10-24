@@ -1,2 +1,0 @@
-ignored:
-  - DL3006 # Allow using ARG before FROM for image digest pinning

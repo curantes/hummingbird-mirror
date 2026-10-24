@@ -1,0 +1,339 @@
+name: Mirror - Verify & Promote Image (reusable)
+
+# Verifies one upstream image and, once approved, copies it to the mirror
+# digest-preserving and together with Red Hat's signatures and attestations,
+# then attaches a SLSA verification summary attestation (VSA). The VSA is
+# issued to this workflow's identity, so consumers pin verification to
+# `.github/workflows/verify-promote.yml@refs/heads/main`.
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: Mirror package name and tests/<name>/ directory
+        required: true
+        type: string
+      source:
+        description: Upstream reference pinned by digest (<repo>:<tag>@sha256:<digest>)
+        required: true
+        type: string
+      mirror:
+        description: Mirror repository prefix (e.g. ghcr.io/curantes/hummingbird-mirror)
+        required: true
+        type: string
+      promote:
+        description: Copy the image to the mirror, attest and tag it
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+env:
+  NAME: ${{ inputs.name }}
+  SOURCE: ${{ inputs.source }}
+  MIRROR_IMAGE: ${{ inputs.mirror }}/${{ inputs.name }}
+  # Red Hat release key 3 (https://security.access.redhat.com/data/63405576.txt)
+  UPSTREAM_KEY: policy/keys/redhat-release3.pub
+  VSA_PREDICATE: https://slsa.dev/verification_summary/v1
+
+jobs:
+  verify:
+    name: Verify Upstream
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      ref: ${{ steps.parse.outputs.ref }}
+      digest: ${{ steps.parse.outputs.digest }}
+      tag: ${{ steps.parse.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      suffix: ${{ steps.version.outputs.suffix }}
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Parse Source Reference
+        id: parse
+        run: |
+          NAME_TAG="${SOURCE%%@*}"
+          DIGEST="${SOURCE##*@}"
+          REPO="${NAME_TAG%:*}"
+          TAG="${NAME_TAG##*:}"
+          if [[ "$DIGEST" != sha256:* || "$REPO" == "$NAME_TAG" || "$TAG" == */* ]]; then
+            echo "Source must be <repo>:<tag>@sha256:<digest> (got: $SOURCE)"
+            exit 1
+          fi
+          if [ ! -f "tests/$NAME/test.sh" ]; then
+            echo "Missing tests/$NAME/test.sh"
+            exit 1
+          fi
+          {
+            echo "ref=$REPO@$DIGEST"
+            echo "digest=$DIGEST"
+            echo "tag=$TAG"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Verify Red Hat Signature and SBOM Attestation
+        # Red Hat signs with a long-lived key and does not upload to the public
+        # Rekor log, hence --insecure-ignore-tlog (as documented upstream).
+        env:
+          REF: ${{ steps.parse.outputs.ref }}
+        run: |
+          # A platform-manifest pin would silently drop the other architectures.
+          ARCHS="$(docker buildx imagetools inspect --raw "$REF" \
+            | jq -r '[.manifests[]?.platform.architecture] | sort | join(",")')"
+          if [[ ",$ARCHS," != *,amd64,* || ",$ARCHS," != *,arm64,* ]]; then
+            echo "Source must be a multi-arch index with amd64 and arm64 (got: '${ARCHS:-single manifest}')"
+            exit 1
+          fi
+          echo "Verifying $REF"
+          cosign verify --key "$UPSTREAM_KEY" --insecure-ignore-tlog "$REF" > /dev/null
+          cosign verify-attestation --key "$UPSTREAM_KEY" --insecure-ignore-tlog \
+            --type spdx "$REF" > /dev/null
+
+      # Guards against a digest that belongs to another stream (e.g. go:1.26
+      # pinned to a 1.27.x image).
+      - name: Resolve Upstream Version
+        id: version
+        env:
+          REF: ${{ steps.parse.outputs.ref }}
+          TAG: ${{ steps.parse.outputs.tag }}
+        run: |
+          STREAM="${TAG%%-*}"
+          SUFFIX="${TAG#"$STREAM"}"
+          VERSION=""
+          if [[ "$STREAM" =~ ^[0-9] ]]; then
+            VERSION="$(skopeo inspect --override-os linux --override-arch amd64 "docker://$REF" \
+              | jq -r '.Labels["org.opencontainers.image.version"] // ""')"
+            if [[ "$VERSION" != "$STREAM."* ]]; then
+              echo "Upstream version '$VERSION' does not belong to stream $STREAM"
+              exit 1
+            fi
+          fi
+          echo "Upstream version: ${VERSION:-n/a} (stream $STREAM${SUFFIX:+, variant ${SUFFIX#-}})"
+          {
+            echo "version=$VERSION"
+            echo "suffix=$SUFFIX"
+          } >> "$GITHUB_OUTPUT"
+
+  test-scan:
+    name: Test & Scan (${{ matrix.arch }})
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      security-events: write
+    env:
+      REF: ${{ needs.verify.outputs.ref }}
+      TAG: ${{ needs.verify.outputs.tag }}
+      TEST_IMAGE: local/${{ inputs.name }}:${{ needs.verify.outputs.tag }}-test
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Pull Upstream Image
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          docker pull --platform "linux/$ARCH" "$REF"
+          docker tag "$REF" "$TEST_IMAGE"
+
+      - name: Run Container Sanity Tests
+        run: bash "tests/$NAME/test.sh" "$TEST_IMAGE" "$TAG"
+
+      - name: Install Syft
+        id: syft
+        uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+
+      - name: Generate Test SBOM
+        env:
+          SYFT: ${{ steps.syft.outputs.cmd }}
+        run: '"$SYFT" -q "docker:$TEST_IMAGE" -o syft-json=sbom.syft.json'
+
+      # A scanner that doesn't recognise the distro sees no packages and
+      # reports zero vulnerabilities (Trivy does this for Hummingbird OS).
+      - name: Verify Package Detection
+        run: |
+          DISTRO="$(jq -r '.distro.id // ""' sbom.syft.json)"
+          PKGS="$(jq '[.artifacts[] | select(.type == "rpm")] | length' sbom.syft.json)"
+          echo "Detected distro '$DISTRO' with $PKGS RPM packages"
+          if [ "$DISTRO" != "hummingbird" ] || [ "$PKGS" -eq 0 ]; then
+            echo "Package detection failed; vulnerability results would be meaningless"
+            exit 1
+          fi
+
+      - name: Vulnerability Scan & Gate (Grype, fixable HIGH+)
+        id: grype
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          sbom: sbom.syft.json
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true
+          output-format: sarif
+
+      - name: Upload Grype Scan Results to GitHub Security
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        if: always() && steps.grype.outputs.sarif != ''
+        with:
+          sarif_file: ${{ steps.grype.outputs.sarif }}
+          category: grype-${{ inputs.name }}-${{ needs.verify.outputs.tag }}-${{ matrix.arch }}
+
+  promote:
+    name: Promote to Mirror
+    needs: [verify, test-scan]
+    if: inputs.promote && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write      # Keyless signing of the VSA via GitHub OIDC
+      attestations: write  # Record the VSA
+    env:
+      REF: ${{ needs.verify.outputs.ref }}
+      DIGEST: ${{ needs.verify.outputs.digest }}
+      TAG: ${{ needs.verify.outputs.tag }}
+      VERSION: ${{ needs.verify.outputs.version }}
+      SUFFIX: ${{ needs.verify.outputs.suffix }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Cosign first: the regctl installer verifies its download with it.
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Install regctl
+        uses: regclient/actions/regctl-installer@dd58ad94f76adb73d8ac1bf75ed25f01545d5b32 # v0.2.0
+        with:
+          release: v0.11.7
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Red Hat's SBOM attestation is a Sigstore bundle linked through the OCI
+      # referrers API; --referrers copies it, --digest-tags the cosign .sig/.att.
+      - name: Copy Image with Signatures and Attestations
+        run: regctl image copy --referrers --digest-tags "$REF" "$MIRROR_IMAGE@$DIGEST"
+
+      - name: Verify Mirrored Copy
+        run: |
+          MIRRORED="$(regctl image digest "$MIRROR_IMAGE@$DIGEST")"
+          if [ "$MIRRORED" != "$DIGEST" ]; then
+            echo "Digest changed during copy: $MIRRORED != $DIGEST"
+            exit 1
+          fi
+          cosign verify --key "$UPSTREAM_KEY" --insecure-ignore-tlog "$MIRROR_IMAGE@$DIGEST" > /dev/null
+          cosign verify-attestation --key "$UPSTREAM_KEY" --insecure-ignore-tlog \
+            --type spdx "$MIRROR_IMAGE@$DIGEST" > /dev/null
+          echo "Mirrored copy keeps digest $DIGEST and verifies with the Red Hat key"
+
+      - name: Check for Existing Approval
+        id: approval
+        run: |
+          if gh attestation verify "oci://$MIRROR_IMAGE@$DIGEST" --bundle-from-oci \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/verify-promote.yml" \
+              --predicate-type "$VSA_PREDICATE" > /dev/null 2>&1; then
+            echo "approved=true" >> "$GITHUB_OUTPUT"
+            echo "Digest already approved; skipping a new verification summary"
+          else
+            echo "approved=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Write Verification Summary
+        if: steps.approval.outputs.approved == 'false'
+        run: |
+          jq -n \
+            --arg verifier "https://github.com/$GITHUB_REPOSITORY/.github/workflows/verify-promote.yml@$GITHUB_REF" \
+            --arg time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg resource "oci://$REF" \
+            --arg policy "https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_SHA/.github/workflows/verify-promote.yml" \
+            --arg commit "$GITHUB_SHA" \
+            '{
+              verifier: { id: $verifier },
+              timeVerified: $time,
+              resourceUri: $resource,
+              policy: { uri: $policy, digest: { gitCommit: $commit } },
+              verificationResult: "PASSED",
+              verifiedLevels: [
+                "UPSTREAM_SIGNATURE_VERIFIED",
+                "UPSTREAM_SBOM_ATTESTATION_VERIFIED",
+                "SANITY_TESTS_PASSED",
+                "NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES"
+              ],
+              slsaVersion: "1.0"
+            }' > vsa.json
+          cat vsa.json
+
+      - name: Attest Verification Summary (VSA)
+        if: steps.approval.outputs.approved == 'false'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.MIRROR_IMAGE }}
+          subject-digest: ${{ env.DIGEST }}
+          predicate-type: ${{ env.VSA_PREDICATE }}
+          predicate-path: vsa.json
+          push-to-registry: true
+
+      # Tags move only after the approval exists, so a tag never points at an
+      # unapproved digest. The timestamped tag is created once per approval
+      # and never overwritten (GHCR has no tag immutability).
+      - name: Move Tags
+        id: tags
+        env:
+          APPROVED: ${{ steps.approval.outputs.approved }}
+        run: |
+          VERSION_TAG="${VERSION:+$VERSION$SUFFIX}"
+          TAGS=("$TAG")
+          if [ -n "$VERSION_TAG" ]; then TAGS+=("$VERSION_TAG"); fi
+          if [ "$APPROVED" = "false" ]; then
+            UNIQUE="${VERSION_TAG:-$TAG}-$(date -u +%Y%m%dT%H%M%SZ)"
+            if regctl image digest "$MIRROR_IMAGE:$UNIQUE" > /dev/null 2>&1; then
+              echo "Tag $UNIQUE already exists; refusing to overwrite"
+              exit 1
+            fi
+            TAGS+=("$UNIQUE")
+          fi
+          for t in "${TAGS[@]}"; do
+            regctl image copy "$MIRROR_IMAGE@$DIGEST" "$MIRROR_IMAGE:$t"
+          done
+          echo "tags=${TAGS[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: Write Job Summary
+        env:
+          TAGS: ${{ steps.tags.outputs.tags }}
+          APPROVED: ${{ steps.approval.outputs.approved }}
+        run: |
+          {
+            echo "### Promoted \`$MIRROR_IMAGE@$DIGEST\`"
+            echo
+            echo "Source: \`$REF\`"
+            if [ "$APPROVED" = "true" ]; then echo; echo "Already approved; tags refreshed."; fi
+            echo
+            echo "Tags:"
+            for t in $TAGS; do printf -- "- \`%s\`\n" "$t"; done
+          } >> "$GITHUB_STEP_SUMMARY"

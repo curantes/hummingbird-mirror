@@ -1,0 +1,36 @@
+# Upstream Red Hat Hardened Images (Hummingbird) approved for mirroring.
+#
+# Each entry is verified (Red Hat signature + SBOM attestation, multi-arch,
+# version stream), tested (tests/<name>/test.sh) and scanned (Grype) before it
+# is copied, digest-preserving and with its signatures, to the mirror and given
+# our verification summary attestation.
+#
+# Renovate refreshes the digests; the tag after the image name is the version
+# stream and never changes. Add a stream by adding an entry.
+images:
+  - name: static
+    source: registry.access.redhat.com/hi/static:latest@sha256:c51e17de4a96e3bd68361830ec54f3c43ffcf398b82765a1ce250bd4a0d99d1f
+  - name: core-runtime
+    source: registry.access.redhat.com/hi/core-runtime:latest@sha256:329ff8f46fe69f036b96c3463272aa778a6df6a4f7570f080fd248a414652b6e
+
+  - name: go
+    source: registry.access.redhat.com/hi/go:1.26@sha256:b0bfe542edabf4c08c304c8db7f9af98417a5d9934443ca2547920b18969bb7b
+  - name: go
+    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:4162773224c8cb37a037cb7aef4665456b091f5b7ef01c6f15a465eb6341a66d
+  - name: go
+    source: registry.access.redhat.com/hi/go:1.27@sha256:44f829d6a00abb6aff3549fca4f749f5bf4826a370b247f41638e350a1dfaf70
+  - name: go
+    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:4d08575d39b4836eca71ac7848fc1e3a12c96932af9816eee87a382eb45eabee
+
+  - name: openjdk
+    source: registry.access.redhat.com/hi/openjdk:21@sha256:e5d1f7ac72541337dba8940b2d148ab46fcd6a0d3c4529b878dd3e532aa9b56b
+  - name: openjdk
+    source: registry.access.redhat.com/hi/openjdk:21-runtime@sha256:c21f21e782b162f8b6e009c2b162fa5f3eefd6db4d0916f82906b88684e9c211
+  - name: openjdk
+    source: registry.access.redhat.com/hi/openjdk:21-builder@sha256:0d7e244bd2b105a3179e19e74713252bbb675b96155de3a1c02c81f6279a5c19
+  - name: openjdk
+    source: registry.access.redhat.com/hi/openjdk:25@sha256:8311685dd60303c592324c0598a3b1438dcab557ecc05988a44ff620cf0ad750
+  - name: openjdk
+    source: registry.access.redhat.com/hi/openjdk:25-runtime@sha256:787d33621f0e32e302ba268efff9f829c1a33e210e45bcb23dd38d485626a73e
+  - name: openjdk
+    source: registry.access.redhat.com/hi/openjdk:25-builder@sha256:f787c173682409414661da5892eaaa4e1abe031e5e0f207ed67d2c644d9f4e54

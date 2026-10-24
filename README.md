@@ -1,82 +1,106 @@
-# Hardened Red Hat Hummingbird Images
+# Hummingbird Mirror
 
-Hardened container base images built on top of the upstream [Red Hat Hummingbird](https://gitlab.com/redhat/hummingbird/containers) (`registry.access.redhat.com/hi/*`) ecosystem.
+A verified mirror of [Red Hat Hardened Images](https://gitlab.com/redhat/hummingbird/containers) (Project Hummingbird, `registry.access.redhat.com/hi/*`).
 
-## Available Image Streams
+Images are **not rebuilt**. Each approved upstream digest is verified, tested and scanned, then copied to the mirror unchanged: same digest, with Red Hat's signatures and attestations. We then attach our own signed approval, a SLSA verification summary attestation (VSA).
 
-- **Static:** `ghcr.io/curantes/hardened-hummingbird-images/static:latest`
-- **Core Runtime:** `ghcr.io/curantes/hardened-hummingbird-images/core-runtime:latest`
+## Available Images
 
-Both are published as multi-arch indexes for `linux/amd64` and `linux/arm64`.
+All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes/hummingbird-mirror/`.
+
+| Image | Tags | Contents | User |
+|---|---|---|---|
+| `static` | `latest` | CA certificates, tzdata; no shell, no libc | 65532 |
+| `core-runtime` | `latest` | glibc runtime with bash | 65532 |
+| `go` | `1.26`, `1.27` | Go toolchain, gcc, git, make | root |
+| `go` | `1.26-builder`, `1.27-builder` | the above plus dnf | root |
+| `openjdk` | `21`, `25` | JDK (javac, jshell) | 65532 |
+| `openjdk` | `21-runtime`, `25-runtime` | headless JRE; distroless, no shell | 65532 |
+| `openjdk` | `21-builder`, `25-builder` | JDK plus bash and dnf | 65532 |
+
+The approved set is defined in [`mirror/images.yaml`](mirror/images.yaml).
 
 ### Tagging Convention
 
-- `latest`: moves with every build.
-- `latest-<UTC timestamp>` (e.g., `latest-20261024T213500Z`): unique per build and never overwritten.
+- `<stream>[-variant]` (e.g. `1.26`, `21-runtime`, `latest`): moves to each newly approved digest.
+- `<version>[-variant]` (e.g. `1.26.10`, `21.0.12-runtime`): the upstream version. It can move when Red Hat rebuilds the same version.
+- `<version or stream>[-variant]-<UTC timestamp>` (e.g. `1.26.10-20261024T213500Z`): unique per approval and never overwritten.
 
-**Pin by digest** (`image@sha256:…`) in production. Renovate keeps pinned digests current. The commit, base image and build details are recorded in the signed SLSA provenance and in the OCI labels `org.opencontainers.image.revision` and `org.opencontainers.image.base.digest`.
+**Pin by digest** (`image@sha256:…`) in production. The mirrored digest is identical to Red Hat's, so Red Hat's catalog, CVE and VEX data apply to it directly.
 
-Images are published to GHCR only. Signatures, provenance and SBOMs are attached to the image digest in the registry; there are no GitHub Releases.
+### Typical Multi-Stage Builds
 
-## Build Model
+```dockerfile
+# Go: build with the toolchain, run on static
+FROM ghcr.io/curantes/hummingbird-mirror/go:1.27 AS build
+WORKDIR /src
+COPY . .
+RUN CGO_ENABLED=0 go build -o /out/app .
 
-Images are layered on Red Hat's prebuilt Hummingbird images: each `Containerfile` pins an upstream multi-arch index by digest and adds metadata and a non-root user. Packages are not rebuilt from source here. Base image updates arrive as Renovate digest bumps.
+FROM ghcr.io/curantes/hummingbird-mirror/static:latest
+COPY --from=build /out/app /app
+ENTRYPOINT ["/app"]
+```
 
-All images build through one reusable workflow, [`build-image.yml`](.github/workflows/build-image.yml):
+```dockerfile
+# Java: build with the JDK, run on the distroless JRE
+FROM ghcr.io/curantes/hummingbird-mirror/openjdk:25-builder AS build
+# ... build your jar with Maven/Gradle ...
 
-1. **Verify upstream:** the pinned base image's signature and SPDX SBOM attestation are verified against Red Hat release key 3 ([`policy/keys/redhat-release3.pub`](policy/keys/redhat-release3.pub)). The build fails if the base isn't pinned by digest or doesn't verify.
-2. **Build, test and audit** natively on amd64 and arm64 runners: sanity tests (`images/<image>/test.sh`), a Syft SBOM, and a Grype scan of that SBOM. Grype uploads SARIF to GitHub Security and **fails the build on fixable HIGH/CRITICAL vulnerabilities**. The build also fails if Syft doesn't detect Hummingbird OS and its RPMs, because a scanner that sees no packages always reports zero vulnerabilities.
-3. **Publish** (pushes to `main` and manual dispatch only): push the multi-arch index, sign it keylessly with Cosign (`--recursive`), and attest SLSA build provenance.
-4. **SBOM:** generate a Syft SPDX SBOM for each platform and attest it to that platform's manifest digest.
+FROM ghcr.io/curantes/hummingbird-mirror/openjdk:25-runtime
+COPY --from=build /build/target/app.jar /app/app.jar
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+```
 
-Scheduled weekly runs re-verify the upstream image and rescan it without publishing.
+## Pipeline
 
-## Security & Governance
+[`mirror.yml`](.github/workflows/mirror.yml) reads the allowlist and runs [`verify-promote.yml`](.github/workflows/verify-promote.yml) for every entry:
 
-- **Non-root:** runs as UID/GID `10001:10001`.
-- **Signing:** keyless Cosign signatures from GitHub OIDC via the Sigstore public-good instance.
-- **SLSA provenance:** GitHub artifact attestations issued to the reusable workflow identity, which meets the SLSA Build L3 isolation model. Caveat: the build workflow lives in the same repository as the images, so anyone who can push to `main` can change it. For strict L3, move `build-image.yml` into a separate, locked-down repository.
-- **SBOM:** Syft `spdx-json`, one per architecture, attested as OCI referrers.
-- **Pinned dependencies:** base images are pinned by digest and GitHub Actions by commit SHA, both updated by Renovate.
-- **Admission control:** [`policy/verify-hummingbird-images.yaml`](policy/verify-hummingbird-images.yaml) is a Kyverno (≥ 1.13) policy that requires the Cosign signature and SLSA provenance from the build workflow on `main`.
+1. **Verify upstream:** the source must be pinned by digest to a multi-arch index (amd64 and arm64). Red Hat's signature and SPDX SBOM attestation must verify against Red Hat release key 3 ([`policy/keys/redhat-release3.pub`](policy/keys/redhat-release3.pub)). The upstream version must belong to the tag's stream (`go:1.26` must contain 1.26.x).
+2. **Test and scan** natively on amd64 and arm64:
+   - sanity tests from `tests/<name>/test.sh`
+   - a Syft SBOM, with a check that Hummingbird OS and its RPMs are detected
+   - a Grype gate that **fails on fixable HIGH/CRITICAL vulnerabilities**
+3. **Promote** (pushes to `main` and manual dispatch only):
+   1. Copy the image by digest with `regctl image copy --referrers --digest-tags`. This keeps Red Hat's cosign signatures and attestations, plus their Sigstore bundle referrers.
+   2. Re-verify the copy against Red Hat's key.
+   3. Attest a VSA (`https://slsa.dev/verification_summary/v1`).
+   4. Only then move the tags.
+
+A digest that fails is never promoted: the tags stay on the last approved digest. Scheduled weekly runs re-verify and rescan every approved digest without promoting.
+
+Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes digests and never moves an entry to another stream.
+
+### Why Grype (not Trivy)
+
+Trivy doesn't recognise Hummingbird OS: it detects no OS and no packages, so it always reports zero vulnerabilities. Grype detects the `hummingbird` distro and its RPMs, and it is the scanner upstream recommends.
 
 ## Verifying Images
 
-The signer identity is the reusable build workflow:
-
 ```bash
-IMAGE=ghcr.io/curantes/hardened-hummingbird-images/core-runtime:latest
-IDENTITY=https://github.com/curantes/hardened-hummingbird-images/.github/workflows/build-image.yml@refs/heads/main
+IMAGE=ghcr.io/curantes/hummingbird-mirror/go:1.27
 
-# Cosign signature
-cosign verify "$IMAGE" \
-  --certificate-identity "$IDENTITY" \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+# Red Hat's original signature and SBOM attestation (on the mirror)
+cosign verify --key policy/keys/redhat-release3.pub --insecure-ignore-tlog "$IMAGE"
+cosign verify-attestation --key policy/keys/redhat-release3.pub --insecure-ignore-tlog --type spdx "$IMAGE"
 
-# SLSA build provenance
-gh attestation verify "oci://$IMAGE" \
-  --repo curantes/hardened-hummingbird-images \
-  --signer-workflow curantes/hardened-hummingbird-images/.github/workflows/build-image.yml
+# Our approval (VSA)
+gh attestation verify "oci://$IMAGE" --bundle-from-oci \
+  --repo curantes/hummingbird-mirror \
+  --signer-workflow curantes/hummingbird-mirror/.github/workflows/verify-promote.yml \
+  --predicate-type https://slsa.dev/verification_summary/v1
 ```
 
-SBOM attestations are attached to the per-platform manifests:
+[`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml) is a Kyverno (≥ 1.13) policy that enforces both checks at admission.
 
-```bash
-DIGEST=$(docker buildx imagetools inspect --raw "$IMAGE" \
-  | jq -r '.manifests[] | select(.platform.architecture == "amd64") | .digest')
+## Known Limitations
 
-gh attestation verify "oci://${IMAGE%:*}@$DIGEST" \
-  --repo curantes/hardened-hummingbird-images \
-  --predicate-type https://spdx.dev/Document/v2.3
-```
+- Red Hat's SLSA provenance on `registry.access.redhat.com` can't be verified with their published keys. We verify their signature and SBOM attestation instead.
+- The VSA records our checks as custom `verifiedLevels`. We don't claim an upstream SLSA build level.
+- The Kyverno policy hasn't been tested in a cluster yet.
 
 ## Running Tests Locally
 
 ```bash
-podman build -t local/static:test images/static
-CONTAINER_ENGINE=podman images/static/test.sh local/static:test
+CONTAINER_ENGINE=podman tests/openjdk/test.sh registry.access.redhat.com/hi/openjdk:25-runtime 25-runtime
 ```
-
-## Why Grype (not Trivy)
-
-Trivy doesn't recognise Hummingbird OS: it detects no OS and no packages, so it always reports zero vulnerabilities. Grype detects the `hummingbird` distro and its RPMs, and it is the scanner upstream recommends.

@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 # Sanity tests for the core-runtime image.
-# Usage: test.sh <image-ref>   (set CONTAINER_ENGINE=podman to run locally)
+# Usage: test.sh <image-ref> [tag]   (set CONTAINER_ENGINE=podman to run locally)
 set -euo pipefail
 
-IMAGE="${1:?usage: $0 <image-ref>}"
+IMAGE="${1:?usage: $0 <image-ref> [tag]}"
 ENGINE="${CONTAINER_ENGINE:-docker}"
 
 run() { "$ENGINE" run --rm "$IMAGE" "$@"; }
 
-echo "Testing non-root UID and GID (10001:10001)..."
-USER_GID="$(run id -u):$(run id -g)"
-if [ "$USER_GID" != "10001:10001" ]; then
-  echo "Unexpected UID:GID: $USER_GID (expected 10001:10001)"
+# Upstream runs as UID 65532 with GID 0 (OpenShift arbitrary-UID convention);
+# the root group grants no root privileges.
+echo "Testing non-root user (UID 65532)..."
+USER_ID="$(run id -u)"
+if [ "$USER_ID" != "65532" ]; then
+  echo "Unexpected UID: $USER_ID (expected 65532)"
   exit 1
 fi
 

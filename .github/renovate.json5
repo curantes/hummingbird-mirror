@@ -4,6 +4,17 @@
     "config:best-practices"
   ],
   "assignees": ["@curantes/maintainers"],
+  "customManagers": [
+    {
+      // Upstream images approved for mirroring (mirror/images.yaml)
+      "customType": "regex",
+      "managerFilePatterns": ["/^mirror/images\\.yaml$/"],
+      "matchStrings": [
+        "source:\\s*(?<depName>[^\\s:@]+):(?<currentValue>[^\\s@]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
   "packageRules": [
     {
       "matchDatasources": ["docker"],
@@ -13,6 +24,13 @@
       "matchPackageNames": ["/^registry\\.access\\.redhat\\.com/hi//"],
       "groupName": "redhat-hummingbird-base-images",
       "commitMessageTopic": "Red Hat Hummingbird base images"
+    },
+    {
+      // Each mirror/images.yaml entry is one version stream; only refresh its
+      // digest. New streams are added as new entries.
+      "matchPackageNames": ["/^registry\\.access\\.redhat\\.com/hi//"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "enabled": false
     },
     {
       "matchManagers": ["github-actions"],
