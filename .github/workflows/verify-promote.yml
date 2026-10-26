@@ -262,13 +262,29 @@ jobs:
       # next step's verification is the gate, not regctl's exit code.
       - name: Copy Image with Signatures and Attestations
         run: |
-          if ! regctl image copy --referrers --force-recursive "$REF" "$MIRROR_IMAGE@$DIGEST"; then
+          # GHCR rate-limits pushes (429) and can briefly deny pushes to a
+          # package that is still being created (403), so retry the copy.
+          retry() {
+            for attempt in 1 2 3; do
+              "$@" && return 0
+              [ "$attempt" -lt 3 ] || return 1
+              echo "::warning::Copy failed (attempt $attempt); retrying"
+              sleep $((attempt * 15))
+            done
+          }
+          # Once the image itself is on the mirror, remaining errors concern
+          # referrers, which the verification step repairs.
+          copied() { regctl image digest "$MIRROR_IMAGE@$DIGEST" > /dev/null 2>&1; }
+          copy_image() {
+            regctl image copy --referrers --force-recursive "$REF" "$MIRROR_IMAGE@$DIGEST" && return 0
+            copied || return 1
             echo "::warning::regctl reported errors while copying referrers; relying on verification"
-          fi
+          }
+          retry copy_image || { echo "Image copy failed after 3 attempts"; exit 1; }
           HEX="${DIGEST#sha256:}"
           for suffix in sig att sbom; do
             if regctl image digest "${REF%@*}:sha256-$HEX.$suffix" > /dev/null 2>&1; then
-              regctl image copy "${REF%@*}:sha256-$HEX.$suffix" "$MIRROR_IMAGE:sha256-$HEX.$suffix"
+              retry regctl image copy "${REF%@*}:sha256-$HEX.$suffix" "$MIRROR_IMAGE:sha256-$HEX.$suffix"
             fi
           done
 
