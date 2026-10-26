@@ -69,6 +69,8 @@ ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
 A digest that fails is never promoted: the tags stay on the last approved digest. Scheduled weekly runs re-verify and rescan every approved digest without promoting.
 
+PRs and pushes to `main` only check entries whose source or `tests/<name>/` changed; changes to the pipeline or `policy/keys/` check every entry. A manual run checks and promotes every entry, which also retries a failed promotion.
+
 Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes digests and never moves an entry to another stream.
 
 ### Why Grype (not Trivy)

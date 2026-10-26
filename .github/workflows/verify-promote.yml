@@ -183,6 +183,9 @@ jobs:
         uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         with:
           sbom: sbom.syft.json
+          # Restores the DB from the Actions cache; Grype still updates it
+          # when a newer one is published.
+          cache-db: true
           fail-build: true
           severity-cutoff: high
           only-fixed: true
