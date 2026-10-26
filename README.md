@@ -17,6 +17,10 @@ All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes
 | `openjdk` | `21`, `25` | JDK (javac, jshell) | 65532 |
 | `openjdk` | `21-runtime`, `25-runtime` | headless JRE; distroless, no shell | 65532 |
 | `openjdk` | `21-builder`, `25-builder` | JDK plus bash and dnf | 65532 |
+| `python` | `3.11`–`3.15` | CPython with pip and venv; distroless, no shell | 65532 |
+| `python` | `3.11-builder`–`3.15-builder` | the above plus bash and dnf | 65532 |
+| `nodejs` | `24`, `26` | Node.js with npm and npx; ships bash (`docker-entrypoint.sh`) | 65532 |
+| `nodejs` | `24-builder`, `26-builder` | the above plus dnf | 65532 |
 
 The approved set is defined in [`mirror/images.yaml`](mirror/images.yaml).
 
