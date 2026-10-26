@@ -1,9 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices"
+    "config:best-practices",
+    ":semanticCommits",
+    // Lets workflows pin tool versions with `# renovate:` comments
+    "customManagers:githubActionsVersions"
   ],
-  "assignees": ["@curantes/maintainers"],
+  "labels": ["dependencies"],
+  "reviewers": ["team:maintainers"],
+  "vulnerabilityAlerts": {
+    "labels": ["dependencies", "security"],
+    "schedule": ["at any time"]
+  },
+  "osvVulnerabilityAlerts": true,
   "customManagers": [
     {
       // Upstream images approved for mirroring (mirror/images.yaml)
@@ -36,6 +45,20 @@
       "matchManagers": ["github-actions"],
       "groupName": "github-actions-dependencies",
       "schedule": ["before 4am on monday"]
+    },
+    {
+      // Low-risk updates merge on their own once the required checks pass;
+      // Hummingbird digests are gated by signature verification and grype.
+      "matchUpdateTypes": ["digest", "pin", "pinDigest", "patch"],
+      "automerge": true,
+      "platformAutomerge": true
+    },
+    {
+      // Give upstream time to yank a bad release before it can automerge.
+      // Not applied to image digests: they lack release timestamps and would
+      // stay pending, and their refreshes usually carry CVE fixes.
+      "matchDatasources": ["github-tags", "github-releases", "github-runners", "npm"],
+      "minimumReleaseAge": "3 days"
     }
   ]
 }
