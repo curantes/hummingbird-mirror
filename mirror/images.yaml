@@ -34,3 +34,37 @@ images:
     source: registry.access.redhat.com/hi/openjdk:25-runtime@sha256:bd4e07bcf8e551ac474a66581c778ae464d1940a4f8ad104556871b63b84f212
   - name: openjdk
     source: registry.access.redhat.com/hi/openjdk:25-builder@sha256:284a106e34b0c9afc6f07f092b1883e6c5d28089d010413a464c10a3502cb4f4
+
+  - name: python
+    source: registry.access.redhat.com/hi/python:3.11@sha256:dbedfcb3a7c9ec225bb043c2136c6418eb442b5459fe99b295cd37517f356acc
+  - name: python
+    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:f8f3f983177a0a5c5c42660850c74356f3f4c68f1619ad6364c4c33c4f035fd5
+  - name: python
+    source: registry.access.redhat.com/hi/python:3.12@sha256:14ce8115a8eb67f602070b85bee19e22856a760454e74afed17a23d41cc1ddc2
+  - name: python
+    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:617b920efed6bc406cb510550dcfb9fa6821fc0748c082b16380cf4a2d9dd991
+  - name: python
+    source: registry.access.redhat.com/hi/python:3.13@sha256:f732203a856b9a932501a9381d1575a9a09c8ec5e4d9b8603e576ad9d577da39
+  - name: python
+    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:5d469b856da746df8c369522f284cf376f47174d0a91b4019266b95081cc401a
+  - name: python
+    source: registry.access.redhat.com/hi/python:3.14@sha256:3521997789c9b812980f0fa15846949a7a7f6bfd959bf61202b5d83e25efecba
+  - name: python
+    source: registry.access.redhat.com/hi/python:3.14-builder@sha256:e5e527e2b5ee838c52545c7bb24d504577320114c8e6850ba7713b68e05a0e74
+  - name: python
+    source: registry.access.redhat.com/hi/python:3.15@sha256:34105beff4de6c524595e139b2055ba3a8a240890bd185e7c27d1c755658e2e4
+  - name: python
+    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:88675838068606429a0c6e39337bfd7bc27a888c096e650f997cc9c560466f7c
+
+  - name: nodejs
+    source: registry.access.redhat.com/hi/nodejs:22@sha256:28209ecd4c60bf836f16d6d64fd256cef69f0e0c5f63b933bc8a2ddcc8821e2e
+  - name: nodejs
+    source: registry.access.redhat.com/hi/nodejs:22-builder@sha256:81821a1452b18fe41c144cbe1626f39b9bba91057fc83c9bfed43ad1b0306401
+  - name: nodejs
+    source: registry.access.redhat.com/hi/nodejs:24@sha256:894f30fa12a8992a39ad4241fd353fec4ec71d223d398aeb1deb3dc3f06abbc0
+  - name: nodejs
+    source: registry.access.redhat.com/hi/nodejs:24-builder@sha256:b215de57b08747be7101e5c18539a5b24ffe39cbdbcb6d79511839d459cf3cc4
+  - name: nodejs
+    source: registry.access.redhat.com/hi/nodejs:26@sha256:e1af1f03cf25d76305c1a49d7358035afde2d15f91d7548a8d1b599474917a9e
+  - name: nodejs
+    source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:1ba134407f1480ff9dc9179916d5d02e7d2ae29140c5526c46d49bc8c673db79
