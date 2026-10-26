@@ -125,3 +125,38 @@ jobs:
           else
             [ "$VERIFY" = "skipped" ]
           fi
+
+  # Re-audits and promotions run unattended (Renovate automerges digest
+  # refreshes), so track failures in one issue that closes on recovery.
+  alert:
+    name: Alert on Failure
+    needs: result
+    if: always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or Close Alert Issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RESULT: ${{ needs.result.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          LABEL: mirror-alert
+        run: |
+          ISSUE="$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')"
+          if [ "$RESULT" = "success" ]; then
+            if [ -n "$ISSUE" ]; then
+              gh issue close "$ISSUE" --comment "Recovered: the $GITHUB_EVENT_NAME run passed. $RUN_URL"
+            fi
+            exit 0
+          fi
+          MESSAGE="The $GITHUB_EVENT_NAME run on \`$GITHUB_REF_NAME\` failed: $RUN_URL"
+          if [ -n "$ISSUE" ]; then
+            gh issue comment "$ISSUE" --body "$MESSAGE"
+          else
+            gh label create "$LABEL" --color B60205 --description "Mirror re-audit or promotion failed" --force
+            gh issue create --title "Mirror run failing on main" --label "$LABEL" --body "$MESSAGE
+
+          Approved digests may have failed re-verification or picked up a fixable HIGH/CRITICAL CVE, or a promotion did not complete. Mirror tags stay on the last approved digest until a run passes. This issue closes automatically when the next run on \`main\` passes."
+          fi
