@@ -11,26 +11,26 @@ images:
   - name: static
     source: registry.access.redhat.com/hi/static:latest@sha256:c51e17de4a96e3bd68361830ec54f3c43ffcf398b82765a1ce250bd4a0d99d1f
   - name: core-runtime
-    source: registry.access.redhat.com/hi/core-runtime:latest@sha256:329ff8f46fe69f036b96c3463272aa778a6df6a4f7570f080fd248a414652b6e
+    source: registry.access.redhat.com/hi/core-runtime:latest@sha256:4163796d8b7f28021178093d31cb97c05336fd3f3a4d7006603a7fef29e997e7
 
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26@sha256:b0bfe542edabf4c08c304c8db7f9af98417a5d9934443ca2547920b18969bb7b
+    source: registry.access.redhat.com/hi/go:1.26@sha256:d7a0756fedbdc4ce7003e2e9722e134f9c0a8caae543e4f813bafb192cbef533
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:4162773224c8cb37a037cb7aef4665456b091f5b7ef01c6f15a465eb6341a66d
+    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:3b4ef404a1aa7dc3a5b7034eea9ef028f84c9f7bb5413efae4d8c9a79dde31f7
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27@sha256:44f829d6a00abb6aff3549fca4f749f5bf4826a370b247f41638e350a1dfaf70
+    source: registry.access.redhat.com/hi/go:1.27@sha256:4f64134d9fabdf432297a05dd845d0f5df4184dc600937568ffcf9c0056d12a8
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:4d08575d39b4836eca71ac7848fc1e3a12c96932af9816eee87a382eb45eabee
+    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:6d191e5250d5a9d1385a19cecd152d8a4a1687fa937940720c5e144c4a249957
 
   - name: openjdk
-    source: registry.access.redhat.com/hi/openjdk:21@sha256:e5d1f7ac72541337dba8940b2d148ab46fcd6a0d3c4529b878dd3e532aa9b56b
+    source: registry.access.redhat.com/hi/openjdk:21@sha256:643f53ee793b2c333ca85c647cacaab7d43af12aef2b0ba543be7ea57d5b6aa5
   - name: openjdk
-    source: registry.access.redhat.com/hi/openjdk:21-runtime@sha256:c21f21e782b162f8b6e009c2b162fa5f3eefd6db4d0916f82906b88684e9c211
+    source: registry.access.redhat.com/hi/openjdk:21-runtime@sha256:f1de163d1588de5f4044ae9a819ad318e8465569689528e3ea2aa78af49f8965
   - name: openjdk
-    source: registry.access.redhat.com/hi/openjdk:21-builder@sha256:0d7e244bd2b105a3179e19e74713252bbb675b96155de3a1c02c81f6279a5c19
+    source: registry.access.redhat.com/hi/openjdk:21-builder@sha256:0beb91ddcd2910240dda0dbd1c6d23db6fd82cfeef641f5a6947f500f5f3e805
   - name: openjdk
-    source: registry.access.redhat.com/hi/openjdk:25@sha256:8311685dd60303c592324c0598a3b1438dcab557ecc05988a44ff620cf0ad750
+    source: registry.access.redhat.com/hi/openjdk:25@sha256:0214fcd44c05dbf883d2a9e6c8bc41da13a4d98c4d1a7b264e5621966f702574
   - name: openjdk
-    source: registry.access.redhat.com/hi/openjdk:25-runtime@sha256:787d33621f0e32e302ba268efff9f829c1a33e210e45bcb23dd38d485626a73e
+    source: registry.access.redhat.com/hi/openjdk:25-runtime@sha256:bd4e07bcf8e551ac474a66581c778ae464d1940a4f8ad104556871b63b84f212
   - name: openjdk
-    source: registry.access.redhat.com/hi/openjdk:25-builder@sha256:f787c173682409414661da5892eaaa4e1abe031e5e0f207ed67d2c644d9f4e54
+    source: registry.access.redhat.com/hi/openjdk:25-builder@sha256:284a106e34b0c9afc6f07f092b1883e6c5d28089d010413a464c10a3502cb4f4
