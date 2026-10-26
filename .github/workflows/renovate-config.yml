@@ -1,0 +1,32 @@
+name: Renovate - Validate Config
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '.github/renovate.json5'
+      - '.github/workflows/renovate-config.yml'
+  # Unfiltered so the required check always reports on PRs.
+  pull_request:
+    branches: [ "main" ]
+
+permissions: {}
+
+env:
+  # renovate: datasource=npm depName=renovate
+  RENOVATE_VERSION: 44.186.2
+
+jobs:
+  validate:
+    name: Renovate Config
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate Renovate Config
+        run: npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator --strict

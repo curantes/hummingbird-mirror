@@ -9,14 +9,10 @@ on:
       - 'policy/keys/**'
       - '.github/workflows/mirror.yml'
       - '.github/workflows/verify-promote.yml'
+  # Runs on every PR so the required "Mirror Result" check always reports;
+  # the plan job skips verification when no mirror inputs changed.
   pull_request:
     branches: [ "main" ]
-    paths:
-      - 'mirror/**'
-      - 'tests/**'
-      - 'policy/keys/**'
-      - '.github/workflows/mirror.yml'
-      - '.github/workflows/verify-promote.yml'
   # Weekly re-audit of every approved digest: re-verifies the upstream
   # signature and rescans for newly disclosed CVEs without promoting.
   schedule:
@@ -40,6 +36,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      changed: ${{ steps.changes.outputs.changed }}
       matrix: ${{ steps.plan.outputs.matrix }}
       mirror: ${{ steps.plan.outputs.mirror }}
     steps:
@@ -47,6 +44,24 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
+
+      - name: Detect Mirror Changes
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          PATTERN='^(mirror/|tests/|policy/keys/|\.github/workflows/(mirror|verify-promote)\.yml$)'
+          if git diff --name-only "$BASE_SHA" HEAD | grep -qE "$PATTERN"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No mirror inputs changed; skipping verification."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Read Allowlist
         id: plan
@@ -67,6 +82,7 @@ jobs:
   verify-promote:
     name: ${{ matrix.image.name }}:${{ matrix.image.tag }}
     needs: plan
+    if: needs.plan.outputs.changed == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -83,3 +99,26 @@ jobs:
       source: ${{ matrix.image.source }}
       mirror: ${{ needs.plan.outputs.mirror }}
       promote: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+
+  # Single stable check for branch protection; matrix job names change as
+  # images are added.
+  result:
+    name: Mirror Result
+    needs: [plan, verify-promote]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check Mirror Jobs
+        env:
+          CHANGED: ${{ needs.plan.outputs.changed }}
+          PLAN: ${{ needs.plan.result }}
+          VERIFY: ${{ needs.verify-promote.result }}
+        run: |
+          echo "plan=$PLAN verify-promote=$VERIFY changed=$CHANGED"
+          [ "$PLAN" = "success" ] || exit 1
+          if [ "$CHANGED" = "true" ]; then
+            [ "$VERIFY" = "success" ]
+          else
+            [ "$VERIFY" = "skipped" ]
+          fi
