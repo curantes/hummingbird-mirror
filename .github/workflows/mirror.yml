@@ -36,7 +36,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      changed: ${{ steps.changes.outputs.changed }}
+      changed: ${{ steps.plan.outputs.changed }}
       matrix: ${{ steps.plan.outputs.matrix }}
       mirror: ${{ steps.plan.outputs.mirror }}
     steps:
@@ -44,40 +44,54 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # Full history so PRs can diff against their base commit
+          # Full history so PRs and pushes can diff against their base commit
           fetch-depth: 0
 
-      - name: Detect Mirror Changes
-        id: changes
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          PATTERN='^(mirror/|tests/|policy/keys/|\.github/workflows/(mirror|verify-promote)\.yml$)'
-          # Outside the `if` so a failed diff fails the job instead of skipping
-          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" HEAD)"
-          if grep -qE "$PATTERN" <<< "$CHANGED_FILES"; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No mirror inputs changed; skipping verification."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Read Allowlist
+      # PRs and pushes only check entries whose source changed or whose tests
+      # changed; pipeline changes, the weekly re-audit and manual runs check
+      # every entry.
+      - name: Plan Images
         id: plan
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
         run: |
-          MATRIX="$(yq -o=json -I=0 '[.images[] | {"name": .name, "source": .source}]' mirror/images.yaml \
-            | jq -c 'map(. + {tag: (.source | split("@")[0] | split(":") | last)})')"
-          DUPES="$(jq -r 'group_by(.name + ":" + .tag) | map(select(length > 1) | .[0].name + ":" + .[0].tag) | join(", ")' <<< "$MATRIX")"
+          ALL="$(yq -o=json -I=0 '.images' mirror/images.yaml \
+            | jq -c 'map({name, source} + {tag: (.source | split("@")[0] | split(":") | last)})')"
+          DUPES="$(jq -r 'group_by(.name + ":" + .tag) | map(select(length > 1) | .[0].name + ":" + .[0].tag) | join(", ")' <<< "$ALL")"
           if [ -n "$DUPES" ]; then
             echo "Duplicate mirror tags in mirror/images.yaml: $DUPES"
             exit 1
           fi
+
+          case "$GITHUB_EVENT_NAME" in
+            pull_request) BASE="$PR_BASE" ;;
+            push) BASE="$PUSH_BEFORE" ;;
+            *) BASE="" ;;
+          esac
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            MATRIX="$ALL"
+            echo "Full run ($GITHUB_EVENT_NAME): checking every entry."
+          else
+            # Outside any `if` so a failed diff fails the job instead of skipping
+            CHANGED_FILES="$(git diff --name-only "$BASE" HEAD)"
+            if grep -qE '^(policy/keys/|\.github/workflows/(mirror|verify-promote)\.yml$)' <<< "$CHANGED_FILES"; then
+              MATRIX="$ALL"
+              echo "Pipeline changed: checking every entry."
+            else
+              # A missing base allowlist means every entry is new
+              BASE_SOURCES="$(git show "$BASE:mirror/images.yaml" 2>/dev/null \
+                | yq -o=json -I=0 '[.images[].source]' || echo '[]')"
+              TESTS="$({ grep -oP '^tests/\K[^/]+(?=/)' <<< "$CHANGED_FILES" || true; } | jq -Rsc 'split("\n") | map(select(. != ""))')"
+              MATRIX="$(jq -c --argjson old "$BASE_SOURCES" --argjson tests "$TESTS" \
+                'map(select((.source | IN($old[]) | not) or (.name | IN($tests[]))))' <<< "$ALL")"
+              echo "Checking entries with a new source or changed tests."
+            fi
+          fi
+
           jq -r '.[] | "- \(.name):\(.tag)"' <<< "$MATRIX"
           {
+            echo "changed=$(jq 'length > 0' <<< "$MATRIX")"
             echo "matrix=$MATRIX"
             echo "mirror=$MIRROR"
           } >> "$GITHUB_OUTPUT"
@@ -127,7 +141,9 @@ jobs:
           fi
 
   # Re-audits and promotions run unattended (Renovate automerges digest
-  # refreshes), so track failures in one issue that closes on recovery.
+  # refreshes), so track failures in one issue. Pushes only check changed
+  # entries and would not retry a failed promotion, so only a full run
+  # (weekly re-audit or manual) closes it.
   alert:
     name: Alert on Failure
     needs: result
@@ -146,7 +162,7 @@ jobs:
         run: |
           ISSUE="$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')"
           if [ "$RESULT" = "success" ]; then
-            if [ -n "$ISSUE" ]; then
+            if [ -n "$ISSUE" ] && [ "$GITHUB_EVENT_NAME" != "push" ]; then
               gh issue close "$ISSUE" --comment "Recovered: the $GITHUB_EVENT_NAME run passed. $RUN_URL"
             fi
             exit 0
@@ -158,5 +174,5 @@ jobs:
             gh label create "$LABEL" --color B60205 --description "Mirror re-audit or promotion failed" --force
             gh issue create --title "Mirror run failing on main" --label "$LABEL" --body "$MESSAGE
 
-          Approved digests may have failed re-verification or picked up a fixable HIGH/CRITICAL CVE, or a promotion did not complete. Mirror tags stay on the last approved digest until a run passes. This issue closes automatically when the next run on \`main\` passes."
+          Approved digests may have failed re-verification or picked up a fixable HIGH/CRITICAL CVE, or a promotion did not complete. Mirror tags stay on the last approved digest until a run passes. Pushes only retry the entries they change, so run the workflow manually to re-check and promote every entry. This issue closes automatically when the next full run (manual or weekly re-audit) passes."
           fi
