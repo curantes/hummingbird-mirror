@@ -177,6 +177,21 @@ jobs:
             echo "Package detection failed; vulnerability results would be meaningless"
             exit 1
           fi
+          # Language runtimes also ship packages outside RPM (pip, npm's
+          # bundled modules) that the gate must see.
+          case "$NAME" in
+            python) LANG_TYPE=python ;;
+            nodejs) LANG_TYPE=npm ;;
+            *) LANG_TYPE="" ;;
+          esac
+          if [ -n "$LANG_TYPE" ]; then
+            LANG_PKGS="$(jq --arg t "$LANG_TYPE" '[.artifacts[] | select(.type == $t)] | length' sbom.syft.json)"
+            echo "Detected $LANG_PKGS $LANG_TYPE packages"
+            if [ "$LANG_PKGS" -eq 0 ]; then
+              echo "No $LANG_TYPE packages detected; the gate would miss language-level vulnerabilities"
+              exit 1
+            fi
+          fi
 
       - name: Vulnerability Scan & Gate (Grype, fixable HIGH+)
         id: grype
