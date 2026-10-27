@@ -131,4 +131,4 @@ CONTAINER_ENGINE=podman tests/openjdk/test.sh registry.access.redhat.com/hi/open
 
 ## Trademarks
 
-Red Hat is a trademark or registered trademark of Red Hat, Inc. or its subsidiaries in the United States and other countries. Red Hat and its product names, such as Red Hat Hardened Images, are used here only to identify the upstream images. The mirrored images are Red Hat's unmodified images and remain subject to Red Hat's terms; this repository's Apache-2.0 license covers only its own code and configuration.
+Red Hat is a trademark or registered trademark of Red Hat, Inc. or its subsidiaries in the United States and other countries. Red Hat and its product names, such as Red Hat Hardened Images, are used here only to identify the upstream images, following Red Hat's [trademark guidelines](https://www.redhat.com/en/about/trademark-guidelines-and-policies). The mirrored images are Red Hat's unmodified images and remain subject to Red Hat's terms; this repository's Apache-2.0 license covers only its own code and configuration.
