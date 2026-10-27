@@ -44,8 +44,8 @@ All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes
 |---|---|---|---|
 | `haproxy` | `3.0` | HAProxy (LTS); ships no configuration, mount one at `/usr/local/etc/haproxy/haproxy.cfg`; distroless, no shell | `haproxy` (999) |
 | `haproxy` | `3.0-builder` | the above plus bash, curl and dnf | `haproxy` (999) |
-| `nginx` | `1.28`, `1.30` | nginx serving a default page on port 8080; configuration in `/etc/nginx/conf.d/`; distroless, no shell | 65532 |
-| `nginx` | `1.28-builder`, `1.30-builder` | the above plus bash, curl and dnf | 65532 |
+| `nginx` | `1.30` | nginx serving a default page on port 8080; configuration in `/etc/nginx/conf.d/`; distroless, no shell | 65532 |
+| `nginx` | `1.30-builder` | the above plus bash, curl and dnf | 65532 |
 
 The approved set is defined in [`mirror/images.yaml`](mirror/images.yaml).
 
