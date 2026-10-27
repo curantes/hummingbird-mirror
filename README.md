@@ -1,34 +1,46 @@
 # Hummingbird Mirror
 
-A verified mirror of [Red Hat Hardened Images](https://gitlab.com/redhat/hummingbird/containers) (Project Hummingbird, `registry.access.redhat.com/hi/*`).
+[![Mirror](https://github.com/curantes/hummingbird-mirror/actions/workflows/mirror.yml/badge.svg?branch=main)](https://github.com/curantes/hummingbird-mirror/actions/workflows/mirror.yml?query=branch%3Amain)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-Images are **not rebuilt**. Each approved upstream digest is verified, tested and scanned, then copied to the mirror unchanged: same digest, with Red Hat's signatures and attestations. We then attach our own signed approval, a SLSA verification summary attestation (VSA).
+An independent mirror of [Red Hat Hardened Images](https://gitlab.com/redhat/hummingbird/containers) (Project Hummingbird, `registry.access.redhat.com/hi/*`). **This project is not affiliated with, endorsed by or supported by Red Hat.** The checks described below are our own.
+
+Images are **not rebuilt**. This pipeline verifies, tests and scans each approved upstream digest, then copies it to the mirror unchanged: same digest, with Red Hat's signatures and attestations. We then attach our own signed approval, a SLSA verification summary attestation (VSA). The VSA records that our checks passed; it is not a statement by Red Hat.
 
 ## Available Images
 
-All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes/hummingbird-mirror/`.
+All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes/hummingbird-mirror/`. They are grouped by the categories of Red Hat's [Hummingbird catalog](https://images.redhat.com/) and sorted alphabetically within each group.
+
+### Operating System
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| `static` | `latest` | CA certificates, tzdata; no shell, no libc | 65532 |
 | `core-runtime` | `latest` | glibc runtime with bash | 65532 |
+| `static` | `latest` | CA certificates, tzdata; no shell, no libc | 65532 |
+
+### Programming Languages & Runtimes
+
+| Image | Tags | Contents | User |
+|---|---|---|---|
 | `go` | `1.26`, `1.27` | Go toolchain, gcc, git, make | root |
 | `go` | `1.26-builder`, `1.27-builder` | the above plus dnf | root |
+| `nodejs` | `24`, `26` | Node.js with npm and npx; ships bash (`docker-entrypoint.sh`) | 65532 |
+| `nodejs` | `24-builder`, `26-builder` | the above plus dnf | 65532 |
 | `openjdk` | `21`, `25` | JDK (javac, jshell) | 65532 |
 | `openjdk` | `21-runtime`, `25-runtime` | headless JRE; distroless, no shell | 65532 |
 | `openjdk` | `21-builder`, `25-builder` | JDK plus bash and dnf | 65532 |
-| `python` | `3.11`–`3.15` | CPython with pip and venv; distroless, no shell | 65532 |
-| `python` | `3.11-builder`–`3.15-builder` | the above plus bash and dnf | 65532 |
-| `nodejs` | `24`, `26` | Node.js with npm and npx; ships bash (`docker-entrypoint.sh`) | 65532 |
-| `nodejs` | `24-builder`, `26-builder` | the above plus dnf | 65532 |
-| `rust` | `1.99` | Rust toolchain (cargo, clippy, rustfmt), gcc, git, make | root |
-| `rust` | `1.99-builder` | the above plus dnf | root |
 | `php` | `8.5` | PHP CLI with common extensions; ships bash | root |
 | `php` | `8.5-builder` | the above plus Composer and dnf | root |
 | `php` | `8.5-fpm` | PHP-FPM on port 9000; distroless, no shell or CLI | 65532 |
 | `php` | `8.5-fpm-builder` | PHP-FPM plus PHP CLI, Composer, bash and dnf | 65532 |
+| `python` | `3.11`–`3.15` | CPython with pip and venv; distroless, no shell | 65532 |
+| `python` | `3.11-builder`–`3.15-builder` | the above plus bash and dnf | 65532 |
+| `rust` | `1.99` | Rust toolchain (cargo, clippy, rustfmt), gcc, git, make | root |
+| `rust` | `1.99-builder` | the above plus dnf | root |
 
 The approved set is defined in [`mirror/images.yaml`](mirror/images.yaml).
+
+## Usage
 
 ### Tagging Convention
 
@@ -116,3 +128,7 @@ gh attestation verify "oci://$IMAGE" --bundle-from-oci \
 ```bash
 CONTAINER_ENGINE=podman tests/openjdk/test.sh registry.access.redhat.com/hi/openjdk:25-runtime 25-runtime
 ```
+
+## Trademarks
+
+Red Hat is a trademark or registered trademark of Red Hat, Inc. or its subsidiaries in the United States and other countries. Red Hat and its product names, such as Red Hat Hardened Images, are used here only to identify the upstream images. The mirrored images are Red Hat's unmodified images and remain subject to Red Hat's terms; this repository's Apache-2.0 license covers only its own code and configuration.
