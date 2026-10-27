@@ -7,12 +7,19 @@
 #
 # Renovate refreshes the digests; the tag after the image name is the version
 # stream and never changes. Add a stream by adding an entry.
+#
+# Entries are grouped by the category of Red Hat's catalog
+# (https://images.redhat.com/) and sorted alphabetically within each group,
+# matching the README.
 images:
-  - name: static
-    source: registry.access.redhat.com/hi/static:latest@sha256:c51e17de4a96e3bd68361830ec54f3c43ffcf398b82765a1ce250bd4a0d99d1f
+  # --- Operating System ---
   - name: core-runtime
     source: registry.access.redhat.com/hi/core-runtime:latest@sha256:4163796d8b7f28021178093d31cb97c05336fd3f3a4d7006603a7fef29e997e7
 
+  - name: static
+    source: registry.access.redhat.com/hi/static:latest@sha256:c51e17de4a96e3bd68361830ec54f3c43ffcf398b82765a1ce250bd4a0d99d1f
+
+  # --- Programming Languages & Runtimes ---
   - name: go
     source: registry.access.redhat.com/hi/go:1.26@sha256:4c9aaf30d46112c6551c089bd08b83a60538a2dec94749fc074ba013bf06fe01
   - name: go
@@ -21,6 +28,15 @@ images:
     source: registry.access.redhat.com/hi/go:1.27@sha256:88bad3959a257253fe8d746b1aeee16fa1c910477ee46d4ee9e90795bbe62d7a
   - name: go
     source: registry.access.redhat.com/hi/go:1.27-builder@sha256:98152035ed200e49bf3b09180ec2cb4d1d5e20417179c5dd7f5b68207518021a
+
+  - name: nodejs
+    source: registry.access.redhat.com/hi/nodejs:24@sha256:894f30fa12a8992a39ad4241fd353fec4ec71d223d398aeb1deb3dc3f06abbc0
+  - name: nodejs
+    source: registry.access.redhat.com/hi/nodejs:24-builder@sha256:d4b96cc9ac62d36bbde7e45e5529cb9860f52a49d7286034541ea30c678333a2
+  - name: nodejs
+    source: registry.access.redhat.com/hi/nodejs:26@sha256:e1af1f03cf25d76305c1a49d7358035afde2d15f91d7548a8d1b599474917a9e
+  - name: nodejs
+    source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:25b8b544d4c91e6b9f97cbc4a3c6fd3f6f77e2a800d256da375cef3c9476d5d4
 
   - name: openjdk
     source: registry.access.redhat.com/hi/openjdk:21@sha256:4fa820fba8d551ac014ed62b78f28c0a330c39cbad683744e55a2003879ce0aa
@@ -34,6 +50,15 @@ images:
     source: registry.access.redhat.com/hi/openjdk:25-runtime@sha256:48196e83cf2c3355e52a29995b97023fbc50e1fc592d1a0a7fd0208c998c1189
   - name: openjdk
     source: registry.access.redhat.com/hi/openjdk:25-builder@sha256:24a1d797ad23cd4372565e7e7927614dcd4f5a7409864f7ce67c5739a29641b9
+
+  - name: php
+    source: registry.access.redhat.com/hi/php:8.5@sha256:920b4d785476600c4e210ec1ba4cd102ee8e57a54702dcfbb1ef5b89297693b5
+  - name: php
+    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:85bd39f636764bc44ec8c69810ce2fd474e82b93014340eff57ee3f21b1d0f50
+  - name: php
+    source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:0a3ed48f2544ef7593c4d3fa824d2844450a955da5763b5280b447bc7b7842fb
+  - name: php
+    source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:5625dfa049eb94b2a70be00456b49087360bafdf98b332408e28e9907794628b
 
   - name: python
     source: registry.access.redhat.com/hi/python:3.11@sha256:802d4f3caa81ebacc1fddd8b1614c07c2d7337cf50a622a4634047972c6a0251
@@ -56,25 +81,7 @@ images:
   - name: python
     source: registry.access.redhat.com/hi/python:3.15-builder@sha256:1f530536374596b7b9d741f0d9d3202530a3fe307c7e25f6345a7f866f2f8ee9
 
-  - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:24@sha256:894f30fa12a8992a39ad4241fd353fec4ec71d223d398aeb1deb3dc3f06abbc0
-  - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:24-builder@sha256:d4b96cc9ac62d36bbde7e45e5529cb9860f52a49d7286034541ea30c678333a2
-  - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:26@sha256:e1af1f03cf25d76305c1a49d7358035afde2d15f91d7548a8d1b599474917a9e
-  - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:25b8b544d4c91e6b9f97cbc4a3c6fd3f6f77e2a800d256da375cef3c9476d5d4
-
   - name: rust
     source: registry.access.redhat.com/hi/rust:1.99@sha256:5a0d5910f9a22117e099ebb6c0010762ec502803022719ec57921297203419bb
   - name: rust
     source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:ad42d37a5772c5f0d376f7adfe3cac1a8daad539edd4a87873af5d3fc828e204
-
-  - name: php
-    source: registry.access.redhat.com/hi/php:8.5@sha256:920b4d785476600c4e210ec1ba4cd102ee8e57a54702dcfbb1ef5b89297693b5
-  - name: php
-    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:85bd39f636764bc44ec8c69810ce2fd474e82b93014340eff57ee3f21b1d0f50
-  - name: php
-    source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:0a3ed48f2544ef7593c4d3fa824d2844450a955da5763b5280b447bc7b7842fb
-  - name: php
-    source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:5625dfa049eb94b2a70be00456b49087360bafdf98b332408e28e9907794628b
