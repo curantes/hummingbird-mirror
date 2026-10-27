@@ -178,10 +178,12 @@ jobs:
             exit 1
           fi
           # Language runtimes also ship packages outside RPM (pip, npm's
-          # bundled modules) that the gate must see.
-          case "$NAME" in
-            python) LANG_TYPE=python ;;
-            nodejs) LANG_TYPE=npm ;;
+          # bundled modules, Composer's vendored dependencies) that the gate
+          # must see. Rust is RPM-only; PHP ships Composer in builders only.
+          case "$NAME:$TAG" in
+            python:*) LANG_TYPE=python ;;
+            nodejs:*) LANG_TYPE=npm ;;
+            php:*-builder) LANG_TYPE=php-composer ;;
             *) LANG_TYPE="" ;;
           esac
           if [ -n "$LANG_TYPE" ]; then

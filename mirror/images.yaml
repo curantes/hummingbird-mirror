@@ -64,3 +64,17 @@ images:
     source: registry.access.redhat.com/hi/nodejs:26@sha256:e1af1f03cf25d76305c1a49d7358035afde2d15f91d7548a8d1b599474917a9e
   - name: nodejs
     source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:25b8b544d4c91e6b9f97cbc4a3c6fd3f6f77e2a800d256da375cef3c9476d5d4
+
+  - name: rust
+    source: registry.access.redhat.com/hi/rust:1.99@sha256:5a0d5910f9a22117e099ebb6c0010762ec502803022719ec57921297203419bb
+  - name: rust
+    source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:ad42d37a5772c5f0d376f7adfe3cac1a8daad539edd4a87873af5d3fc828e204
+
+  - name: php
+    source: registry.access.redhat.com/hi/php:8.5@sha256:920b4d785476600c4e210ec1ba4cd102ee8e57a54702dcfbb1ef5b89297693b5
+  - name: php
+    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:85bd39f636764bc44ec8c69810ce2fd474e82b93014340eff57ee3f21b1d0f50
+  - name: php
+    source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:0a3ed48f2544ef7593c4d3fa824d2844450a955da5763b5280b447bc7b7842fb
+  - name: php
+    source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:5625dfa049eb94b2a70be00456b49087360bafdf98b332408e28e9907794628b

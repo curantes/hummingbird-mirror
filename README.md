@@ -21,6 +21,12 @@ All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes
 | `python` | `3.11-builder`–`3.15-builder` | the above plus bash and dnf | 65532 |
 | `nodejs` | `24`, `26` | Node.js with npm and npx; ships bash (`docker-entrypoint.sh`) | 65532 |
 | `nodejs` | `24-builder`, `26-builder` | the above plus dnf | 65532 |
+| `rust` | `1.99` | Rust toolchain (cargo, clippy, rustfmt), gcc, git, make | root |
+| `rust` | `1.99-builder` | the above plus dnf | root |
+| `php` | `8.5` | PHP CLI with common extensions; ships bash | root |
+| `php` | `8.5-builder` | the above plus Composer and dnf | root |
+| `php` | `8.5-fpm` | PHP-FPM on port 9000; distroless, no shell or CLI | 65532 |
+| `php` | `8.5-fpm-builder` | PHP-FPM plus PHP CLI, Composer, bash and dnf | 65532 |
 
 The approved set is defined in [`mirror/images.yaml`](mirror/images.yaml).
 
