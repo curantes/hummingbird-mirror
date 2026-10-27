@@ -14,13 +14,13 @@ images:
     source: registry.access.redhat.com/hi/core-runtime:latest@sha256:4163796d8b7f28021178093d31cb97c05336fd3f3a4d7006603a7fef29e997e7
 
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26@sha256:d7a0756fedbdc4ce7003e2e9722e134f9c0a8caae543e4f813bafb192cbef533
+    source: registry.access.redhat.com/hi/go:1.26@sha256:594c862771833a6ffaeee479dc97030e465ace309d1b99519b57a924e30988db
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:3b4ef404a1aa7dc3a5b7034eea9ef028f84c9f7bb5413efae4d8c9a79dde31f7
+    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:0ac4c8b77c69e5cc4c242ce276a9fead10fa294dbadb09c9e1001346f03acf15
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27@sha256:4f64134d9fabdf432297a05dd845d0f5df4184dc600937568ffcf9c0056d12a8
+    source: registry.access.redhat.com/hi/go:1.27@sha256:88bad3959a257253fe8d746b1aeee16fa1c910477ee46d4ee9e90795bbe62d7a
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:6d191e5250d5a9d1385a19cecd152d8a4a1687fa937940720c5e144c4a249957
+    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:98152035ed200e49bf3b09180ec2cb4d1d5e20417179c5dd7f5b68207518021a
 
   - name: openjdk
     source: registry.access.redhat.com/hi/openjdk:21@sha256:643f53ee793b2c333ca85c647cacaab7d43af12aef2b0ba543be7ea57d5b6aa5
@@ -36,31 +36,31 @@ images:
     source: registry.access.redhat.com/hi/openjdk:25-builder@sha256:284a106e34b0c9afc6f07f092b1883e6c5d28089d010413a464c10a3502cb4f4
 
   - name: python
-    source: registry.access.redhat.com/hi/python:3.11@sha256:dbedfcb3a7c9ec225bb043c2136c6418eb442b5459fe99b295cd37517f356acc
+    source: registry.access.redhat.com/hi/python:3.11@sha256:8ae5e72536652ec37824f7790afa8c9ebd74987f7c082250a592b7e9fb651c15
   - name: python
-    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:f8f3f983177a0a5c5c42660850c74356f3f4c68f1619ad6364c4c33c4f035fd5
+    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:5bd843730979ba94ccfd00cf458b9db4adc73712bc0f43ec419d1a16ff3dcd29
   - name: python
     source: registry.access.redhat.com/hi/python:3.12@sha256:14ce8115a8eb67f602070b85bee19e22856a760454e74afed17a23d41cc1ddc2
   - name: python
-    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:617b920efed6bc406cb510550dcfb9fa6821fc0748c082b16380cf4a2d9dd991
+    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:4616ad2ef27c0dd3238b3c2817281c367fe460b182c47607d6f65132b257aba9
   - name: python
-    source: registry.access.redhat.com/hi/python:3.13@sha256:f732203a856b9a932501a9381d1575a9a09c8ec5e4d9b8603e576ad9d577da39
+    source: registry.access.redhat.com/hi/python:3.13@sha256:c632e231fae0ef5478550d81b97eaac366714f8422902670d3866817fff0f97c
   - name: python
-    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:5d469b856da746df8c369522f284cf376f47174d0a91b4019266b95081cc401a
+    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:6f7e9fda2a5c736437fb0c15f20327e8a69c1a92284831257a1b2ee299eea89c
   - name: python
-    source: registry.access.redhat.com/hi/python:3.14@sha256:3521997789c9b812980f0fa15846949a7a7f6bfd959bf61202b5d83e25efecba
+    source: registry.access.redhat.com/hi/python:3.14@sha256:2aa5e65f6b2eb7e2ab769530585e9aaa070f09f0ca6a92fac3fd577a81d9880f
   - name: python
-    source: registry.access.redhat.com/hi/python:3.14-builder@sha256:e5e527e2b5ee838c52545c7bb24d504577320114c8e6850ba7713b68e05a0e74
+    source: registry.access.redhat.com/hi/python:3.14-builder@sha256:f82d44b9709c99f744ff0d9490e648e57bae9eb51c0ebda599d04fd80b58aa6a
   - name: python
-    source: registry.access.redhat.com/hi/python:3.15@sha256:34105beff4de6c524595e139b2055ba3a8a240890bd185e7c27d1c755658e2e4
+    source: registry.access.redhat.com/hi/python:3.15@sha256:e22260916d812443b6a7d2e43670fc1303279648d41c2ef2fb74b96766674236
   - name: python
-    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:88675838068606429a0c6e39337bfd7bc27a888c096e650f997cc9c560466f7c
+    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:6da00bb1bf35bd947347f3428f6e8cc9b9e0fe8f2b59e9e58b5e6ae4b71089cd
 
   - name: nodejs
     source: registry.access.redhat.com/hi/nodejs:24@sha256:894f30fa12a8992a39ad4241fd353fec4ec71d223d398aeb1deb3dc3f06abbc0
   - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:24-builder@sha256:b215de57b08747be7101e5c18539a5b24ffe39cbdbcb6d79511839d459cf3cc4
+    source: registry.access.redhat.com/hi/nodejs:24-builder@sha256:f906fe516cfda105f08e7ee2ab3843750cdb467f20f044497be353b116e2d17f
   - name: nodejs
     source: registry.access.redhat.com/hi/nodejs:26@sha256:e1af1f03cf25d76305c1a49d7358035afde2d15f91d7548a8d1b599474917a9e
   - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:1ba134407f1480ff9dc9179916d5d02e7d2ae29140c5526c46d49bc8c673db79
+    source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:41e795d246951eea1374a608ec9d6bf5c93ddf20c9a65176a18896b56488f1f1
