@@ -109,8 +109,20 @@ jobs:
           SUFFIX="${TAG#"$STREAM"}"
           VERSION=""
           if [[ "$STREAM" =~ ^[0-9] ]]; then
-            VERSION="$(skopeo inspect --override-os linux --override-arch amd64 "docker://$REF" \
-              | jq -r '.Labels["org.opencontainers.image.version"] // ""')"
+            # --no-tags skips listing every upstream tag; the registry
+            # intermittently answers that with 502. Retry other transient errors.
+            for attempt in 1 2 3; do
+              if INSPECT="$(skopeo inspect --no-tags --override-os linux --override-arch amd64 "docker://$REF")"; then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "skopeo inspect failed after 3 attempts"
+                exit 1
+              fi
+              echo "::warning::skopeo inspect failed (attempt $attempt); retrying"
+              sleep $((attempt * 15))
+            done
+            VERSION="$(jq -r '.Labels["org.opencontainers.image.version"] // ""' <<< "$INSPECT")"
             if [[ "$VERSION" != "$STREAM."* ]]; then
               echo "Upstream version '$VERSION' does not belong to stream $STREAM"
               exit 1
@@ -195,14 +207,31 @@ jobs:
             fi
           fi
 
+      - name: Install Grype
+        id: grype-install
+        uses: anchore/scan-action/download-grype@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+
+      # The DB download is occasionally reset mid-transfer, and scan-action
+      # fails on the first error, so fetch it here with retries and have the
+      # gate scan against it without updating.
+      - name: Update Grype Database
+        env:
+          GRYPE: ${{ steps.grype-install.outputs.cmd }}
+        run: |
+          for attempt in 1 2 3; do
+            "$GRYPE" db update && exit 0
+            [ "$attempt" -lt 3 ] || { echo "Grype database update failed after 3 attempts"; exit 1; }
+            echo "::warning::Grype database update failed (attempt $attempt); retrying"
+            sleep $((attempt * 15))
+          done
+
       - name: Vulnerability Scan & Gate (Grype, fixable HIGH+)
         id: grype
         uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        env:
+          GRYPE_DB_AUTO_UPDATE: "false"
         with:
           sbom: sbom.syft.json
-          # Restores the DB from the Actions cache; Grype still updates it
-          # when a newer one is published.
-          cache-db: true
           fail-build: true
           severity-cutoff: high
           only-fixed: true
