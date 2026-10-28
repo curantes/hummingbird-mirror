@@ -84,7 +84,7 @@ images:
   - name: rust
     source: registry.access.redhat.com/hi/rust:1.99@sha256:5a0d5910f9a22117e099ebb6c0010762ec502803022719ec57921297203419bb
   - name: rust
-    source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:63752211b4a793e07b19afa72c5ea1c225a4caef2b3428b2412caf5b2c4f57a0
+    source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:b4f9d417990f7f111e64102142d451f7276786b7dd4b5cfba3312c98e6269f12
 
   # --- Web Services ---
   - name: haproxy
