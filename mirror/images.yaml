@@ -21,22 +21,22 @@ images:
 
   # --- Programming Languages & Runtimes ---
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26@sha256:4c9aaf30d46112c6551c089bd08b83a60538a2dec94749fc074ba013bf06fe01
+    source: registry.access.redhat.com/hi/go:1.26@sha256:32039d2f0aa3117dfa0cf68bb46904e93d13a28ff03604b28894132532f4304f
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:a1e8652c0c06749ff33a5fd3378eb8a83948c30ab31386c05de430294db4676d
+    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:67b65bbb377e8602b248d3c83fb4a4b1ba14216b461af444da70fdcc3e47b5b2
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27@sha256:54644838229bd919c8718ab13e0696f269884e89d3ad42f052a802944d5e9903
+    source: registry.access.redhat.com/hi/go:1.27@sha256:661c9318bad795f5b9e5a851ae045dab81519e9c5b2e96b7879c074faf0882c8
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:9a24b13a9b4d7f0c2810c76035452159c34c0b7ccb527699e99c4ee11ea13337
+    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:4f95b1337f1b0a8cc528cb142e897a1d3996b732176592f9982e98cefc2b0c6f
 
   - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:24@sha256:894f30fa12a8992a39ad4241fd353fec4ec71d223d398aeb1deb3dc3f06abbc0
+    source: registry.access.redhat.com/hi/nodejs:24@sha256:873692b4d4b6107a9b831ed56333d29bc721fc441ac6dbc7839f49598be430d7
   - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:24-builder@sha256:df03f3031d7bf9f9bbce2cd1f9c0eea2e7eba23b66aaa22c457db3c770d6af74
+    source: registry.access.redhat.com/hi/nodejs:24-builder@sha256:8f3b89ebd2f48f84e7d7adbd5ec0264cfb0bcf946b5a6cff86e99a137b2723bb
   - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:26@sha256:e1af1f03cf25d76305c1a49d7358035afde2d15f91d7548a8d1b599474917a9e
+    source: registry.access.redhat.com/hi/nodejs:26@sha256:b32f0fcf592ba3cb9a278141e048cdaf0af4d425492b091f2f5d2efd66cd08f3
   - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:e9488c516047407e286a12b6e14672590bb4f6f4ac215d19868a05b814491deb
+    source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:c41c7d7dc6f910594140996771fa78801e6df80b49edf4bcc52800bb1baac36f
 
   - name: openjdk
     source: registry.access.redhat.com/hi/openjdk:21@sha256:4fa820fba8d551ac014ed62b78f28c0a330c39cbad683744e55a2003879ce0aa
@@ -52,39 +52,39 @@ images:
     source: registry.access.redhat.com/hi/openjdk:25-builder@sha256:24a1d797ad23cd4372565e7e7927614dcd4f5a7409864f7ce67c5739a29641b9
 
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5@sha256:920b4d785476600c4e210ec1ba4cd102ee8e57a54702dcfbb1ef5b89297693b5
+    source: registry.access.redhat.com/hi/php:8.5@sha256:0e1597229237bb5826da32047703eee99d0cd1e2bdb48bd6c922d80e4d2c4e72
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:56b177a4c23b53182afd37548235e9494f4a2afcc9ca1a049bc63fca03496c46
+    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:ee1974a60fb1e8fba97cadfed95e299d16d35104f60a736772cc3e9be477c493
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:0a3ed48f2544ef7593c4d3fa824d2844450a955da5763b5280b447bc7b7842fb
+    source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:2968c23e25585a7409a637efab8411bdd463fc4ca7aecc4bfb3ba417ad01f722
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:8e0098db424eddaf4494f9039af8357bf2e7b77b4fbbff66ebd42ba153097917
+    source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:97f34114cec9c9e0dde7be269d962ecef5276ef6e64b95501eee577946d25b4b
 
   - name: python
     source: registry.access.redhat.com/hi/python:3.11@sha256:802d4f3caa81ebacc1fddd8b1614c07c2d7337cf50a622a4634047972c6a0251
   - name: python
-    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:5b9d4acef78d811cdf47d0a7c58b7c80a6948ec5fb99e7626c5689f96c1ec75e
+    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:0324ac78e9a89328dabe8d71719ce21380cd2bc99fadd22d0b966db6b2935b9a
   - name: python
-    source: registry.access.redhat.com/hi/python:3.12@sha256:c0fe77230ba2380b1f4031c56186a2ee23ca1c6dc15137c571a69458ba482832
+    source: registry.access.redhat.com/hi/python:3.12@sha256:ecd6f1d6538d31ed37622294efd06d4c0bb3a2556f6715a65ad883619c08cd60
   - name: python
-    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:08a3af100c8c595e348dac3a2a0ff96e3265bd63d0d17f2fe53504ae0b75f189
+    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:cba58d19d886f430782c1b753c6145fc49234cbdd549c6e966a5f4786b6fcd6b
   - name: python
-    source: registry.access.redhat.com/hi/python:3.13@sha256:8c8f02a71a4deedac00175629e2dd3f5beeacc65b369b7daae1a2a62a17ae698
+    source: registry.access.redhat.com/hi/python:3.13@sha256:2635995ab42abe70dce1070d9aa4be0e110fa07352764cd81db12269d8c32e73
   - name: python
-    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:0bd5cde34a04d90b55f58008cfa9db67799643b77f557669557b0a2600b3f9ed
+    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:2e4833711b27cd4b9e57a3dddf93a9aa2f84e72af61674524f2ef6a1a3df4e9f
   - name: python
     source: registry.access.redhat.com/hi/python:3.14@sha256:a9ad325f34cf0806b810a58a71a352a8b6321737d5ee669ed962ad26038ca5ae
   - name: python
     source: registry.access.redhat.com/hi/python:3.14-builder@sha256:cff3c96ae1f37cc7ef71ea4af4088a0e15d4df48e79ee8cf0cca68baed75826b
   - name: python
-    source: registry.access.redhat.com/hi/python:3.15@sha256:3e814420b66d0eb09c38642b1b4bbfef50efec2a44aa97e757bd568bc31c665b
+    source: registry.access.redhat.com/hi/python:3.15@sha256:0ec46bbf301cf3c9d1c5591e50e19cf95d564d08c5edd39bdfa4a888b0a13da7
   - name: python
-    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:b69e41170010bcf87940ff4673a3e7408512538ec9b16d9784d243a4f60328cb
+    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:b4232c78b220392c4b6c41d7033dad56aa613d122f2b654bd6b52443ea3d24e0
 
   - name: rust
-    source: registry.access.redhat.com/hi/rust:1.99@sha256:5a0d5910f9a22117e099ebb6c0010762ec502803022719ec57921297203419bb
+    source: registry.access.redhat.com/hi/rust:1.99@sha256:2a8055093394cdecc6ab6b70a172e0c3eeff22579aaf0bcd52899153aa40f253
   - name: rust
-    source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:b4f9d417990f7f111e64102142d451f7276786b7dd4b5cfba3312c98e6269f12
+    source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:76116908bf373a90122fabbb5d3901862191dd55b0f4b49fcd1e0f608027d4a4
 
   # --- Web Services ---
   - name: haproxy
@@ -95,4 +95,4 @@ images:
   - name: nginx
     source: registry.access.redhat.com/hi/nginx:1.30@sha256:8c67b090cf1abe69c03ee6c95af82bc7aa2b5ff488cd0336c50f3ccdbba3aad7
   - name: nginx
-    source: registry.access.redhat.com/hi/nginx:1.30-builder@sha256:a4658f28330ca1f51d6f7aae3ce817372706ac699ef641488d0ab9c950833c5e
+    source: registry.access.redhat.com/hi/nginx:1.30-builder@sha256:6eaeebf1ef4869fce4a786a19a91a20297c109906a754657eed6bd2902ad6ec2
