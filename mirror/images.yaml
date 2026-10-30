@@ -61,25 +61,25 @@ images:
     source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:97f34114cec9c9e0dde7be269d962ecef5276ef6e64b95501eee577946d25b4b
 
   - name: python
-    source: registry.access.redhat.com/hi/python:3.11@sha256:802d4f3caa81ebacc1fddd8b1614c07c2d7337cf50a622a4634047972c6a0251
+    source: registry.access.redhat.com/hi/python:3.11@sha256:5b8d59031a50fce534c6b1cdfbe24756dd45442771ac82596097ade02c85ef64
   - name: python
-    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:0324ac78e9a89328dabe8d71719ce21380cd2bc99fadd22d0b966db6b2935b9a
+    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:22c2f68c4d0c302a2def18a8650a0e087bad9b16d3d800764d03c52f7cf0913d
   - name: python
-    source: registry.access.redhat.com/hi/python:3.12@sha256:ecd6f1d6538d31ed37622294efd06d4c0bb3a2556f6715a65ad883619c08cd60
+    source: registry.access.redhat.com/hi/python:3.12@sha256:7ec601c79877a81a86673a75440cf7f61ecc2753067513af5df6e11891867a6f
   - name: python
-    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:cba58d19d886f430782c1b753c6145fc49234cbdd549c6e966a5f4786b6fcd6b
+    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:809f01ba8db118489cff195fe38b512d9ad6996d49002d9622ba3aae28012952
   - name: python
-    source: registry.access.redhat.com/hi/python:3.13@sha256:2635995ab42abe70dce1070d9aa4be0e110fa07352764cd81db12269d8c32e73
+    source: registry.access.redhat.com/hi/python:3.13@sha256:1cd97370667050c94eadcb4ad1ab8ca98b49a4bc17126e309373ae27ea03d45f
   - name: python
-    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:2e4833711b27cd4b9e57a3dddf93a9aa2f84e72af61674524f2ef6a1a3df4e9f
+    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:62575f4254d1b4b78a34685114888858746c9059068c6b2dce504b642607c872
   - name: python
     source: registry.access.redhat.com/hi/python:3.14@sha256:a9ad325f34cf0806b810a58a71a352a8b6321737d5ee669ed962ad26038ca5ae
   - name: python
     source: registry.access.redhat.com/hi/python:3.14-builder@sha256:cff3c96ae1f37cc7ef71ea4af4088a0e15d4df48e79ee8cf0cca68baed75826b
   - name: python
-    source: registry.access.redhat.com/hi/python:3.15@sha256:0ec46bbf301cf3c9d1c5591e50e19cf95d564d08c5edd39bdfa4a888b0a13da7
+    source: registry.access.redhat.com/hi/python:3.15@sha256:02891196c7c07ca9bfddaaa74f11f8381ae4473d84533aac0552ec705a5f4116
   - name: python
-    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:b4232c78b220392c4b6c41d7033dad56aa613d122f2b654bd6b52443ea3d24e0
+    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:67d79cc1df79cb1428d46ab546d854ecb16870a728feb5883483c0f00e322d93
 
   - name: rust
     source: registry.access.redhat.com/hi/rust:1.99@sha256:2a8055093394cdecc6ab6b70a172e0c3eeff22579aaf0bcd52899153aa40f253
@@ -90,7 +90,7 @@ images:
   - name: haproxy
     source: registry.access.redhat.com/hi/haproxy:3.0@sha256:643a41cb75a6513fb010e58fb0330fe098fa57a3d641afc5c85463673376efd8
   - name: haproxy
-    source: registry.access.redhat.com/hi/haproxy:3.0-builder@sha256:0e5adb888ca766b1c51928d899354fcf636ff2925dcb73ffaa7d21957fea8d43
+    source: registry.access.redhat.com/hi/haproxy:3.0-builder@sha256:9bdd04279c9e7dcd0436492a1348a4d86d2c61c18ca85170598bd0585d7f24ec
 
   - name: nginx
     source: registry.access.redhat.com/hi/nginx:1.30@sha256:8c67b090cf1abe69c03ee6c95af82bc7aa2b5ff488cd0336c50f3ccdbba3aad7
