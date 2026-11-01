@@ -47,6 +47,20 @@ All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes
 | `valkey` | `9.0` | Valkey server and CLI on port 6379, data in `/data`; runs without a configuration, so protected mode refuses remote clients until you set a password (`--requirepass`) or mount one; ships bash | 65532 |
 | `valkey` | `9.0-builder` | the above plus curl and dnf | 65532 |
 
+### Messaging
+
+| Image | Tags | Contents | User |
+|---|---|---|---|
+| `rabbitmq` | `4.3` | RabbitMQ broker and CLI tools; AMQP on 5672, data in `/var/lib/rabbitmq` (keep the hostname stable, it names the node and its data directory); `guest` only works from inside the container; plugins such as `rabbitmq_management` ship but are disabled, and `/etc/rabbitmq` isn't writable, so mount an `enabled_plugins` file to enable them; ships bash | 65532 |
+| `rabbitmq` | `4.3-builder` | the above plus curl and dnf | 65532 |
+
+### Networking
+
+| Image | Tags | Contents | User |
+|---|---|---|---|
+| `coredns` | `1.15` | CoreDNS; without a Corefile, answers `whoami` on port 53; pass `-conf` to use a mounted Corefile; the binary has no file capabilities, so port 53 needs unprivileged low ports (Docker's default; with Podman add `--sysctl net.ipv4.ip_unprivileged_port_start=0`); distroless, no shell | 65532 |
+| `coredns` | `1.15-builder` | the above plus bash, curl and dnf | 65532 |
+
 ### Web Services
 
 | Image | Tags | Contents | User |
