@@ -52,13 +52,13 @@ images:
     source: registry.access.redhat.com/hi/openjdk:25-builder@sha256:24a1d797ad23cd4372565e7e7927614dcd4f5a7409864f7ce67c5739a29641b9
 
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5@sha256:0e1597229237bb5826da32047703eee99d0cd1e2bdb48bd6c922d80e4d2c4e72
+    source: registry.access.redhat.com/hi/php:8.5@sha256:2595975024183f0ed9786672c7234afed7ad8b2d2cd1e046cc48c9a89a8f4f2d
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:b2a0663961109c2046816a6d53908c775f37bec8dea4fb38558a2663bedd4189
+    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:2327aa5ad70483423094432779e545a794d16d53801f8ed345839b8993261b81
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:2968c23e25585a7409a637efab8411bdd463fc4ca7aecc4bfb3ba417ad01f722
+    source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:71decb383d42c3b72985267f10db223186e99e5dac75ada664d905a0b31c43d1
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:9e782d7e8ba6ccd88b699c019d73009d07077ef33ec217f934218c1042e258ac
+    source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:affd19a8f23830e855ea040f2979300a6c00a42d35c8a75473e02de61044c428
 
   - name: python
     source: registry.access.redhat.com/hi/python:3.11@sha256:5b8d59031a50fce534c6b1cdfbe24756dd45442771ac82596097ade02c85ef64
