@@ -7,7 +7,7 @@
     "customManagers:githubActionsVersions"
   ],
   "labels": ["dependencies"],
-  "reviewers": ["team:maintainers"],
+  "reviewers": ["curantes"],
   "vulnerabilityAlerts": {
     "labels": ["dependencies", "security"],
     "schedule": ["at any time"]
@@ -50,6 +50,15 @@
       // Low-risk updates merge on their own once the required checks pass;
       // Hummingbird digests are gated by signature verification and grype.
       "matchUpdateTypes": ["digest", "pin", "pinDigest", "patch"],
+      "automerge": true,
+      "platformAutomerge": true
+    },
+    {
+      // Renovate ships minor releases every few days. The pinned version only
+      // runs renovate-config-validator, which the update's own Renovate Config
+      // check exercises.
+      "matchPackageNames": ["renovate"],
+      "matchUpdateTypes": ["minor"],
       "automerge": true,
       "platformAutomerge": true
     },
