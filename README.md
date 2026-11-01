@@ -47,6 +47,13 @@ All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes
 | `valkey` | `9.0` | Valkey server and CLI on port 6379, data in `/data`; runs without a configuration, so protected mode refuses remote clients until you set a password (`--requirepass`) or mount one; ships bash | 65532 |
 | `valkey` | `9.0-builder` | the above plus curl and dnf | 65532 |
 
+### Developer Tools
+
+| Image | Tags | Contents | User |
+|---|---|---|---|
+| `opentofu` | `1.12` | OpenTofu CLI; the entrypoint is `tofu`; providers are downloaded at `tofu init`; distroless, no shell | 65532 |
+| `opentofu` | `1.12-builder` | the above plus bash, curl and dnf | 65532 |
+
 ### Messaging
 
 | Image | Tags | Contents | User |
