@@ -26,13 +26,13 @@ if [ "$OUT" != "hello" ]; then
 fi
 
 echo "Testing dynamic linking (libc.so)..."
-run ldconfig -p | grep -q 'libc.so' || {
+run ldconfig -p | grep 'libc.so' > /dev/null || {
   echo "libc.so not found in ldconfig cache"
   exit 1
 }
 
 echo "Testing locale C.UTF-8..."
-run locale | grep -q 'C.UTF-8' || {
+run locale | grep 'C.UTF-8' > /dev/null || {
   echo "Locale C.UTF-8 not configured"
   exit 1
 }
