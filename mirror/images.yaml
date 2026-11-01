@@ -97,6 +97,18 @@ images:
   - name: valkey
     source: registry.access.redhat.com/hi/valkey:9.0-builder@sha256:b0a89d7544df60c57b66a9d77b075bff514f75fbbafcfa72fcf01956a92395c0
 
+  # --- Messaging ---
+  - name: rabbitmq
+    source: registry.access.redhat.com/hi/rabbitmq:4.3@sha256:bad51ed4d6f6795020c0622f3f893ef9e38b0862e9ed9db03aedb69b604a23a8
+  - name: rabbitmq
+    source: registry.access.redhat.com/hi/rabbitmq:4.3-builder@sha256:8156c75e9b9dec18a4c8d450a23e405e4f8b16b665dca59a3dfeeda481c0a263
+
+  # --- Networking ---
+  - name: coredns
+    source: registry.access.redhat.com/hi/coredns:1.15@sha256:7762d8129d8d2fa21e662e5211ffa7ee2e9c73f781de3416fc3996296ce57c3a
+  - name: coredns
+    source: registry.access.redhat.com/hi/coredns:1.15-builder@sha256:ca099260412ce73fff82e522d8eb73c6113b07bab85741e8ebe9ab553d0d5ece
+
   # --- Web Services ---
   - name: haproxy
     source: registry.access.redhat.com/hi/haproxy:3.0@sha256:643a41cb75a6513fb010e58fb0330fe098fa57a3d641afc5c85463673376efd8
