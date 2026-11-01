@@ -85,8 +85,18 @@ OUT="$(git_in ls-remote https://127.0.0.1:1/none.git 2>&1 || true)"
 [[ "$OUT" == *"Failed to connect"* ]] || { echo "Unexpected HTTPS error: $OUT"; exit 1; }
 
 echo "Testing the ssh client..."
-OUT="$("$ENGINE" run --rm --entrypoint ssh "$IMAGE" -V 2>&1)"
+# The image has no passwd entry for 65532 and OpenSSH refuses to run without
+# one ("No user exists for uid 65532"). Podman adds an entry, Docker and
+# Kubernetes don't, so SSH remotes need one mounted. The mount also stops
+# Podman from adding its own, so both engines run the same check.
+printf 'root:x:0:0:root:/root:/bin/bash\n65532:x:65532:0:git user:/tmp:/sbin/nologin\n' > "$WORKDIR/passwd"
+chmod a+r "$WORKDIR/passwd"
+ssh_in() { "$ENGINE" run --rm --network host -v "$WORKDIR/passwd:/etc/passwd:ro,z" --entrypoint ssh "$IMAGE" "$@"; }
+OUT="$(ssh_in -V 2>&1)" || { echo "ssh -V failed: $OUT"; exit 1; }
 [[ "$OUT" == OpenSSH_* ]] || { echo "Unexpected ssh -V output: $OUT"; exit 1; }
+# Nothing listens on port 1: ssh must get as far as connecting.
+OUT="$(ssh_in -o BatchMode=yes -p 1 git@127.0.0.1 2>&1 || true)"
+[[ "$OUT" == *"Connection refused"* ]] || { echo "Unexpected ssh error: $OUT"; exit 1; }
 
 echo "Testing shell and package manager for variant '${VARIANT:-default}'..."
 case "$VARIANT" in

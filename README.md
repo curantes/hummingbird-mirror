@@ -53,10 +53,8 @@ All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes
 |---|---|---|---|
 | `curl` | `8.23` | curl with HTTP/2 and OpenSSL, and the system CA trust store; the entrypoint is `curl`; distroless, no shell | 65532 |
 | `curl` | `8.23-builder` | the above plus bash and dnf | 65532 |
-| `git` | `2.56` | git with HTTP(S) and SSH remotes; the entrypoint is `git`, working directory `/git`; ships bash, less and the ssh client | 65532 |
+| `git` | `2.56` | git with HTTP(S) and SSH remotes; the entrypoint is `git`, working directory `/git`; ships bash, less and the ssh client; the image has no passwd entry for 65532, so for SSH remotes mount an `/etc/passwd` with one (Podman adds it automatically, Docker and Kubernetes don't) | 65532 |
 | `git` | `2.56-builder` | the above plus curl and dnf | 65532 |
-| `opentofu` | `1.12` | OpenTofu CLI; the entrypoint is `tofu`; providers are downloaded at `tofu init`; distroless, no shell | 65532 |
-| `opentofu` | `1.12-builder` | the above plus bash, curl and dnf | 65532 |
 
 ### Messaging
 

@@ -108,11 +108,6 @@ images:
   - name: git
     source: registry.access.redhat.com/hi/git:2.56-builder@sha256:f8f84484196fa296024e321eb170ac5d7dd94fcf112206d690001b44579710c0
 
-  - name: opentofu
-    source: registry.access.redhat.com/hi/opentofu:1.12@sha256:c647a0bf2cbc909828ba46c5ed02eaf612536375667e9157632e04871ad7fe98
-  - name: opentofu
-    source: registry.access.redhat.com/hi/opentofu:1.12-builder@sha256:23039c5ca85a10c59e7d15462c5610b16bc9bee7e76883618b5583bee8b86ce8
-
   # --- Messaging ---
   - name: rabbitmq
     source: registry.access.redhat.com/hi/rabbitmq:4.3@sha256:bad51ed4d6f6795020c0622f3f893ef9e38b0862e9ed9db03aedb69b604a23a8
