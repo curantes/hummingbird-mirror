@@ -38,6 +38,15 @@ All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes
 | `rust` | `1.99` | Rust toolchain (cargo, clippy, rustfmt), gcc, git, make | root |
 | `rust` | `1.99-builder` | the above plus dnf | root |
 
+### Database & Data Management
+
+| Image | Tags | Contents | User |
+|---|---|---|---|
+| `etcd` | `3.7` | etcd, etcdctl and etcdutl; client port 2379, peer port 2380, data in `/var/lib/etcd`; distroless, no shell | 65532 |
+| `etcd` | `3.7-builder` | the above plus bash, curl and dnf | 65532 |
+| `valkey` | `9.0` | Valkey server and CLI on port 6379, data in `/data`; runs without a configuration, so protected mode refuses remote clients until you set a password (`--requirepass`) or mount one; ships bash | 65532 |
+| `valkey` | `9.0-builder` | the above plus curl and dnf | 65532 |
+
 ### Web Services
 
 | Image | Tags | Contents | User |

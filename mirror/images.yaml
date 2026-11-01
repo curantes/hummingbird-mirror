@@ -86,6 +86,17 @@ images:
   - name: rust
     source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:8cc4f35515832cdc3d0463b49be07d24287d5472ca2b2708570c41c57e22667e
 
+  # --- Database & Data Management ---
+  - name: etcd
+    source: registry.access.redhat.com/hi/etcd:3.7@sha256:11f7196511adf377894e3d12786854f92cbc35ecf13da3307a6676a67ac85c1f
+  - name: etcd
+    source: registry.access.redhat.com/hi/etcd:3.7-builder@sha256:d5f1aa8cbe7bdb49819dcc55f37bceb26c03afb57bcd030aa3bfbc58da4e9a71
+
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:9.0@sha256:7cc987b1f9c581b9eb3115b4e728a795bb35d188d57eccce8ad54d7b5bb5d94f
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:9.0-builder@sha256:b0a89d7544df60c57b66a9d77b075bff514f75fbbafcfa72fcf01956a92395c0
+
   # --- Web Services ---
   - name: haproxy
     source: registry.access.redhat.com/hi/haproxy:3.0@sha256:643a41cb75a6513fb010e58fb0330fe098fa57a3d641afc5c85463673376efd8
