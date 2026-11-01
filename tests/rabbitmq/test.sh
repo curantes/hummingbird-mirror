@@ -45,9 +45,9 @@ start() {
     "$ENGINE" logs "$CONTAINER"
     return 1
   }
-  AMQP_PORT="$("$ENGINE" port "$CONTAINER" 5672/tcp | head -n 1)"
+  AMQP_PORT="$("$ENGINE" port "$CONTAINER" 5672/tcp | sed -n 1p)"
   AMQP_PORT="${AMQP_PORT##*:}"
-  HTTP_PORT="$("$ENGINE" port "$CONTAINER" 15672/tcp | head -n 1)"
+  HTTP_PORT="$("$ENGINE" port "$CONTAINER" 15672/tcp | sed -n 1p)"
   HTTP_PORT="${HTTP_PORT##*:}"
 }
 

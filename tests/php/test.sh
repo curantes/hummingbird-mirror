@@ -73,7 +73,7 @@ case "$VARIANT" in
     fi
 
     echo "Testing PHP-FPM version ($STREAM.x)..."
-    OUT="$(run php-fpm -v | head -n 1)"
+    OUT="$(run php-fpm -v | sed -n 1p)"
     if [[ "$OUT" != "PHP $STREAM."*"(fpm-fcgi)"* ]]; then
       echo "Unexpected version: $OUT (expected PHP $STREAM.x fpm-fcgi)"
       exit 1
@@ -84,10 +84,10 @@ case "$VARIANT" in
 
     echo "Testing FastCGI request against the default entrypoint..."
     CONTAINER="$("$ENGINE" run -d -p 127.0.0.1::9000 -v "$WORKDIR:/src:ro,z" "$IMAGE")"
-    PORT="$("$ENGINE" port "$CONTAINER" 9000/tcp | head -n 1)"
+    PORT="$("$ENGINE" port "$CONTAINER" 9000/tcp | sed -n 1p)"
     PORT="${PORT##*:}"
     for _ in $(seq 1 20); do
-      "$ENGINE" logs "$CONTAINER" 2>&1 | grep -q 'ready to handle connections' && break
+      "$ENGINE" logs "$CONTAINER" 2>&1 | grep 'ready to handle connections' > /dev/null && break
       sleep 0.5
     done
     OUT="$(fcgi_get "$PORT" /src/hello.php)"
