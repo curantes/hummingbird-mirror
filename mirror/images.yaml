@@ -97,6 +97,22 @@ images:
   - name: valkey
     source: registry.access.redhat.com/hi/valkey:9.0-builder@sha256:b0a89d7544df60c57b66a9d77b075bff514f75fbbafcfa72fcf01956a92395c0
 
+  # --- Developer Tools ---
+  - name: curl
+    source: registry.access.redhat.com/hi/curl:8.23@sha256:80a369b386fdd4d257152b50ec5c452b36a66dc9615a52666715728224bd0fed
+  - name: curl
+    source: registry.access.redhat.com/hi/curl:8.23-builder@sha256:5b04bfdcd2039fba875e5ecffd7969ccd67b1d3e6779e1fa5617db44fa1cf42b
+
+  - name: git
+    source: registry.access.redhat.com/hi/git:2.56@sha256:4929da84a23484c15c17573dcda4db522181a35a8a69c2793a7849c136d7ed81
+  - name: git
+    source: registry.access.redhat.com/hi/git:2.56-builder@sha256:f8f84484196fa296024e321eb170ac5d7dd94fcf112206d690001b44579710c0
+
+  - name: opentofu
+    source: registry.access.redhat.com/hi/opentofu:1.12@sha256:c647a0bf2cbc909828ba46c5ed02eaf612536375667e9157632e04871ad7fe98
+  - name: opentofu
+    source: registry.access.redhat.com/hi/opentofu:1.12-builder@sha256:23039c5ca85a10c59e7d15462c5610b16bc9bee7e76883618b5583bee8b86ce8
+
   # --- Messaging ---
   - name: rabbitmq
     source: registry.access.redhat.com/hi/rabbitmq:4.3@sha256:bad51ed4d6f6795020c0622f3f893ef9e38b0862e9ed9db03aedb69b604a23a8
