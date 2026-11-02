@@ -27,7 +27,7 @@ cli() { "$ENGINE" exec ${PASSWORD:+-e "VALKEYCLI_AUTH=$PASSWORD"} "$CONTAINER" v
 # reply bytes without carriage returns.
 remote() {
   local port
-  port="$("$ENGINE" port "$CONTAINER" 6379/tcp | head -n 1)"
+  port="$("$ENGINE" port "$CONTAINER" 6379/tcp | sed -n 1p)"
   exec 3<> "/dev/tcp/127.0.0.1/${port##*:}"
   printf '%s' "$2" >&3
   { timeout 5 head -c "$1" <&3 || true; } | tr -d '\r'

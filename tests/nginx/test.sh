@@ -23,7 +23,7 @@ fails() { ! "$ENGINE" run --rm --entrypoint "$1" "$IMAGE" "${@:2}" > /dev/null 2
 start() {
   [ -z "$CONTAINER" ] || "$ENGINE" rm -f "$CONTAINER" > /dev/null
   CONTAINER="$("$ENGINE" run -d -p 127.0.0.1::8080 "$@" "$IMAGE")"
-  PORT="$("$ENGINE" port "$CONTAINER" 8080/tcp | head -n 1)"
+  PORT="$("$ENGINE" port "$CONTAINER" 8080/tcp | sed -n 1p)"
   PORT="${PORT##*:}"
 }
 

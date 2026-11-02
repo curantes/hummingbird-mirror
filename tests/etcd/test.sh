@@ -28,10 +28,10 @@ start() {
   CONTAINER="$("$ENGINE" run -d -p 127.0.0.1::2379 -v "$VOLUME:/var/lib/etcd" "$IMAGE" \
     --listen-client-urls http://0.0.0.0:2379 \
     --advertise-client-urls http://127.0.0.1:2379)"
-  PORT="$("$ENGINE" port "$CONTAINER" 2379/tcp | head -n 1)"
+  PORT="$("$ENGINE" port "$CONTAINER" 2379/tcp | sed -n 1p)"
   PORT="${PORT##*:}"
   for _ in $(seq 1 20); do
-    curl -fsS "http://127.0.0.1:$PORT/health" 2> /dev/null | grep -q '"health":"true"' && return 0
+    curl -fsS "http://127.0.0.1:$PORT/health" 2> /dev/null | grep '"health":"true"' > /dev/null && return 0
     sleep 0.5
   done
   echo "etcd did not become healthy"
@@ -47,13 +47,13 @@ if [ "$USER_CONF" != "65532" ]; then
 fi
 
 echo "Testing etcd version ($STREAM.x)..."
-OUT="$(run --version | head -n 1)"
+OUT="$(run --version | sed -n 1p)"
 if [[ "$OUT" != "etcd Version: $STREAM."* ]]; then
   echo "Unexpected version: $OUT (expected $STREAM.x)"
   exit 1
 fi
 for tool in etcdctl etcdutl; do
-  OUT="$("$ENGINE" run --rm --entrypoint "$tool" "$IMAGE" version | head -n 1)"
+  OUT="$("$ENGINE" run --rm --entrypoint "$tool" "$IMAGE" version | sed -n 1p)"
   if [[ "$OUT" != "$tool version: $STREAM."* ]]; then
     echo "Unexpected $tool version: $OUT (expected $STREAM.x)"
     exit 1

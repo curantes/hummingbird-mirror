@@ -56,7 +56,7 @@ if [ "$USER_CONF" != "haproxy" ]; then
 fi
 
 echo "Testing HAProxy version ($STREAM.x)..."
-OUT="$(run -v | head -n 1)"
+OUT="$(run -v | sed -n 1p)"
 if [[ "$OUT" != "HAProxy version $STREAM."* ]]; then
   echo "Unexpected version: $OUT (expected $STREAM.x)"
   exit 1
@@ -67,7 +67,7 @@ run -c -f "$CFG" > /dev/null 2>&1 || { echo "haproxy -c failed"; exit 1; }
 
 echo "Testing proxied request through the default entrypoint..."
 CONTAINER="$("$ENGINE" run -d -p 127.0.0.1::8080 -v "$WORKDIR/haproxy.cfg:$CFG:ro,z" "$IMAGE")"
-PORT="$("$ENGINE" port "$CONTAINER" 8080/tcp | head -n 1)"
+PORT="$("$ENGINE" port "$CONTAINER" 8080/tcp | sed -n 1p)"
 PORT="${PORT##*:}"
 OUT=""
 for _ in $(seq 1 20); do

@@ -31,7 +31,7 @@ start() {
   CONTAINER="$("$ENGINE" run -d --sysctl net.ipv4.ip_unprivileged_port_start=0 \
     -p 127.0.0.1::53/udp -p 127.0.0.1::53/tcp \
     -p 127.0.0.1::8080 -p 127.0.0.1::8181 "$@")"
-  port() { local p; p="$("$ENGINE" port "$CONTAINER" "$1" | head -n 1)"; echo "${p##*:}"; }
+  port() { local p; p="$("$ENGINE" port "$CONTAINER" "$1" | sed -n 1p)"; echo "${p##*:}"; }
   UDP_PORT="$(port 53/udp)"
   TCP_PORT="$(port 53/tcp)"
   HEALTH_PORT="$(port 8080/tcp)"
@@ -60,7 +60,7 @@ if [ "$USER_CONF" != "65532" ]; then
 fi
 
 echo "Testing CoreDNS version ($STREAM.x)..."
-OUT="$(run -version | head -n 1)"
+OUT="$(run -version | sed -n 1p)"
 if [[ "$OUT" != "CoreDNS-$STREAM."* ]]; then
   echo "Unexpected version: $OUT (expected CoreDNS-$STREAM.x)"
   exit 1
