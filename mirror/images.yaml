@@ -21,13 +21,13 @@ images:
 
   # --- Programming Languages & Runtimes ---
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26@sha256:8c69a356e95552c709fe4e88d3f763fcac809eb3ecca6d3997124afba27d95d7
+    source: registry.access.redhat.com/hi/go:1.26@sha256:c0cdbb616f8b0cb38f51472462e5c35b374ed8f3606f4bf6ec3f4ff500e70491
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:abc5ea04970cfe68a72a44c4c79b0b3925d42537539681d3bdd879a6d8c83955
+    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:ba3cd1452083ba8d45f6c02332e5f376c89afe49eca68f9cd3969c1d82893458
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27@sha256:63fcf1ad80f8fabb7df47c1ae17fd746aa2c1dfdd004b4ddb3063910bf562dc6
+    source: registry.access.redhat.com/hi/go:1.27@sha256:fe899d22e22f546e7553700cf263e2f7a6382f4e20d2fb856fc0557719b188d6
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:cc9281981f1a8c010eba5bc3fc69096441747ae463bfa863b845df7ef2c2b0d4
+    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:6fe9ce4857b84dd4cf21440f82571c6168208b7a9d39cf178145e4a43b6f7463
 
   - name: nodejs
     source: registry.access.redhat.com/hi/nodejs:24@sha256:f15b72201d12d9325844ddbcce05a13caf9a87107799f79e52fc9336d3da4587
@@ -61,25 +61,25 @@ images:
     source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:affd19a8f23830e855ea040f2979300a6c00a42d35c8a75473e02de61044c428
 
   - name: python
-    source: registry.access.redhat.com/hi/python:3.11@sha256:00611553623037b88b7486f4141fdec6add37cb2e65d6fe7544d7ffd1112bc4c
+    source: registry.access.redhat.com/hi/python:3.11@sha256:0a6ade178ba89d212940fe00c1eee5fda423b247b6edc1f1e883f8a05cb1c2c2
   - name: python
-    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:5052d00d28910d91485e677925e009a60166baf85f1a5aba68dbe91528514ab8
+    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:87800e0d370c53a2fe679ec09bc28b4aca76d184cf60e41e1f12869798290a95
   - name: python
-    source: registry.access.redhat.com/hi/python:3.12@sha256:df218d2098647f2082fd66ef2cab32ee6b54b3bc98f1e1eaa11a567c03ca404b
+    source: registry.access.redhat.com/hi/python:3.12@sha256:1380d71b2b879853102bc4e6d06e32ae786c398a3e7a6475b7159f6cadc3798b
   - name: python
-    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:c919f591ad2d6a6a53557a2954c5b7c2169bb1f1242b12f0e61c2cfaf76b2d70
+    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:d469945a598468dc835a45b216558dbb77c4162dff7eabab2f3be8c61c96a6dc
   - name: python
-    source: registry.access.redhat.com/hi/python:3.13@sha256:96810b58d070b39ed0301ec71991dff1d44cd0232f4202f1098fd25b89dcf222
+    source: registry.access.redhat.com/hi/python:3.13@sha256:f2f16e4244509505cd251962195e6ad655fcdb641ae58c79a2624221af369914
   - name: python
-    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:01f9b47c8162f612b29f3a6fba698bdb4e35148bef8d36367f78b6d2be945777
+    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:057b805119a39e064ee4da1bfd7c770ec65e2292c15cd465f7c299418f667e94
   - name: python
     source: registry.access.redhat.com/hi/python:3.14@sha256:a9ad325f34cf0806b810a58a71a352a8b6321737d5ee669ed962ad26038ca5ae
   - name: python
     source: registry.access.redhat.com/hi/python:3.14-builder@sha256:cff3c96ae1f37cc7ef71ea4af4088a0e15d4df48e79ee8cf0cca68baed75826b
   - name: python
-    source: registry.access.redhat.com/hi/python:3.15@sha256:437824820b69e8438de913bb591b1bb9a57cf23cb4f54fa83d205f23edeb1f8f
+    source: registry.access.redhat.com/hi/python:3.15@sha256:8045fb973b46087eaacfc800356062ac8072c3cbdcea1a9803f6fc12d77cf62d
   - name: python
-    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:6b5e0cf59ad6cbf251ff8ccc61d16c5fda0b1391bd0becb72c23dd123e1542fc
+    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:22aaa6a688f50ca1a8595c725e42f457baff88b53366f9c40be276c9623c4f05
 
   - name: rust
     source: registry.access.redhat.com/hi/rust:1.99@sha256:a3b6ed0bd2ec60e48df7a699eb5b05f0db98d3238a29dc3e1285a342a1824993
