@@ -21,9 +21,9 @@ images:
 
   # --- Programming Languages & Runtimes ---
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26@sha256:c0cdbb616f8b0cb38f51472462e5c35b374ed8f3606f4bf6ec3f4ff500e70491
+    source: registry.access.redhat.com/hi/go:1.26@sha256:2b267135a7118d2dbd345d51bca6cd07e568805f6c4fab3bbf0b3c134017ca59
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:ba3cd1452083ba8d45f6c02332e5f376c89afe49eca68f9cd3969c1d82893458
+    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:85ba6a981c0b2fae7dbc81c434120f8405b3bf33651811a208adca447462b12b
   - name: go
     source: registry.access.redhat.com/hi/go:1.27@sha256:fe899d22e22f546e7553700cf263e2f7a6382f4e20d2fb856fc0557719b188d6
   - name: go
@@ -39,11 +39,11 @@ images:
     source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:2c6ca72356d673e53e3d7e0fe37acc6684e3cf5fea226b223a18c97a209cc1bc
 
   - name: openjdk
-    source: registry.access.redhat.com/hi/openjdk:21@sha256:4fa820fba8d551ac014ed62b78f28c0a330c39cbad683744e55a2003879ce0aa
+    source: registry.access.redhat.com/hi/openjdk:21@sha256:74f2b73c117ff5bc4daab6c844a9cb44fe42417e4e72fbbb160164918b7718c3
   - name: openjdk
-    source: registry.access.redhat.com/hi/openjdk:21-runtime@sha256:2eeabf0e43bd3c789f835159ba9b3b7343540d4591902daf800b05c60deb7e75
+    source: registry.access.redhat.com/hi/openjdk:21-runtime@sha256:68d3cc8b1f6c34feecdde8380793a3eb43d61c59e885208bee8f8d62fcc5d02c
   - name: openjdk
-    source: registry.access.redhat.com/hi/openjdk:21-builder@sha256:1528b60530906dc2e843434883935d662d844267baf1f642d911c34e768ea569
+    source: registry.access.redhat.com/hi/openjdk:21-builder@sha256:020e63a80161a01f022bb99c083a344f78c297c76aad0f1df73b87ec81ecf946
   - name: openjdk
     source: registry.access.redhat.com/hi/openjdk:25@sha256:ab02c0698b3061e0172ebd562fd6d174f1d3b20cf917089a4bd677b218d0bdc8
   - name: openjdk
@@ -63,15 +63,15 @@ images:
   - name: python
     source: registry.access.redhat.com/hi/python:3.11@sha256:0a6ade178ba89d212940fe00c1eee5fda423b247b6edc1f1e883f8a05cb1c2c2
   - name: python
-    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:87800e0d370c53a2fe679ec09bc28b4aca76d184cf60e41e1f12869798290a95
+    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:0107a3b5597b8661ec63b8e857fb36470e80ec2835ac3ed5fe05bb0aca3cd3a6
   - name: python
-    source: registry.access.redhat.com/hi/python:3.12@sha256:1e52216ae3ce4d7face3ca714ff09dea4039975a1fc3658a4be96c80ea1a764f
+    source: registry.access.redhat.com/hi/python:3.12@sha256:92e83dcf087d5ef02e6edaf218ab40c297227b8845da97db8f6766b698703d74
   - name: python
-    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:d0c20fb11396ef2486bb80ee94fb82fd0a4c989d51ccb04d65754be5dbd6044b
+    source: registry.access.redhat.com/hi/python:3.12-builder@sha256:50bd624e1f371ea710f7aa69a8bb9bafc5d61ca7ead561748b7c0e6a055d87b7
   - name: python
     source: registry.access.redhat.com/hi/python:3.13@sha256:20773caa84fd5cd9666aca4bf2a8120a8500dff09e06a5a3410afbc3a6cb725d
   - name: python
-    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:4abd09a888c114c08eb63ae5b429a1ac8e46ff4dc250c7f3ee3ac49e0e313db3
+    source: registry.access.redhat.com/hi/python:3.13-builder@sha256:2d113c8a276a5e786843fcbbfee5b4fa81f9961494c53389cc901f60566b9384
   - name: python
     source: registry.access.redhat.com/hi/python:3.14@sha256:a9ad325f34cf0806b810a58a71a352a8b6321737d5ee669ed962ad26038ca5ae
   - name: python
@@ -79,12 +79,12 @@ images:
   - name: python
     source: registry.access.redhat.com/hi/python:3.15@sha256:a8241403eb7003db09cd13f0e0e1aad672c3d0bad0a39cf36d2b3c7ee7b70879
   - name: python
-    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:0f1e045db12ce181ff15ac036156225816394e2e76e3c87f51ff61596924f098
+    source: registry.access.redhat.com/hi/python:3.15-builder@sha256:0014ff8cda3b4de1495aa3f317a046a04fd6cefbbee730876d40a8c01ab9279a
 
   - name: rust
-    source: registry.access.redhat.com/hi/rust:1.99@sha256:474eaae977e3898b13a6f14ee3bf29ec2a7f6fcf1c1890c095b82050da39c54b
+    source: registry.access.redhat.com/hi/rust:1.99@sha256:3940bcd47612f953ee1af2cea4978074bea4f803b4a7da173efdd751b7532364
   - name: rust
-    source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:53a707f796738532fa8c1b9a3ec585137b7ee7ea297658cf968aa22053c0df3b
+    source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:18d7ffb860c946ab702dc1d7ed0ffb5cce5d8b703160f3c32af8d89509f327a9
 
   # --- Database & Data Management ---
   - name: etcd
