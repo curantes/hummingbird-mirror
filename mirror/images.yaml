@@ -21,13 +21,13 @@ images:
 
   # --- Programming Languages & Runtimes ---
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26@sha256:2b267135a7118d2dbd345d51bca6cd07e568805f6c4fab3bbf0b3c134017ca59
+    source: registry.access.redhat.com/hi/go:1.26@sha256:937cf018fc7add44cdbb15541f47897e494e68d20f4f9a59b95acb42f4176b11
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:88bfc950bda46b59d54a81d6dc67671f3179654498035d8f40fc0e9336a00699
+    source: registry.access.redhat.com/hi/go:1.26-builder@sha256:784cc9545f11de3ab19c22be7528ef64706c310975778f377c0b0ce62cc053fc
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27@sha256:c238df5254cf4be5e83ccc50d6f74598c9dae5f169a4b6ce840cab9ad319b3dd
+    source: registry.access.redhat.com/hi/go:1.27@sha256:272f0bce0fbc8d8756c275538de3024059d648f2f1553ed3b63beeda992128e4
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:6958d0cd5316c04cc12626e2220d5b6a86eb536b8a84fc7557ae8f6f7f5b4df5
+    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:4df53fbf5e5475b680929a90238767c40ca2cce209037b7b01bdb4695880d8ee
 
   - name: nodejs
     source: registry.access.redhat.com/hi/nodejs:24@sha256:f15b72201d12d9325844ddbcce05a13caf9a87107799f79e52fc9336d3da4587
@@ -61,9 +61,9 @@ images:
     source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:2ab751973e1a43b56a2d9e649b13f110766ffcc5de2c67bb5b8eca72a104ae37
 
   - name: python
-    source: registry.access.redhat.com/hi/python:3.11@sha256:0a6ade178ba89d212940fe00c1eee5fda423b247b6edc1f1e883f8a05cb1c2c2
+    source: registry.access.redhat.com/hi/python:3.11@sha256:d9608ef8a9464512d8230c7509b59e12c865b864f62c1aad009dc33458be05b9
   - name: python
-    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:be8b1c5fae20dbf61da342d2ea4e6963992bf9e464d11b00767567852cd6c383
+    source: registry.access.redhat.com/hi/python:3.11-builder@sha256:3ca2db5b0aa3d3c1526e9801176807ae212565127d4eabaa16b1233c65e669ec
   - name: python
     source: registry.access.redhat.com/hi/python:3.12@sha256:92e83dcf087d5ef02e6edaf218ab40c297227b8845da97db8f6766b698703d74
   - name: python
