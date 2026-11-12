@@ -1,0 +1,7 @@
+rules:
+  self-repository:
+    ignore:
+      # The `$/` syntax for same-repository workflows isn't adopted yet:
+      # actionlint rejects it, and the VSA is verified against the identity
+      # of verify-promote.yml, which has to be confirmed unchanged first.
+      - mirror.yml

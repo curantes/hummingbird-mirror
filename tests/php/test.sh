@@ -35,7 +35,7 @@ fcgi_get() {
   exec 3<> "/dev/tcp/127.0.0.1/$port"
   {
     printf '\x01\x01\x00\x01\x00\x08\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00' # BEGIN_REQUEST, responder
-    printf "\\x01\\x04\\x00\\x01\\x$(printf %02x $((len >> 8)))\\x$(printf %02x $((len & 255)))\\x00\\x00"
+    printf '\x01\x04\x00\x01%b%b\x00\x00' "\\x$(printf %02x $((len >> 8)))" "\\x$(printf %02x $((len & 255)))" # PARAMS header with the length
     cat "$params"
     printf '\x01\x04\x00\x01\x00\x00\x00\x00' # end of PARAMS
     printf '\x01\x05\x00\x01\x00\x00\x00\x00' # empty STDIN
