@@ -88,7 +88,7 @@ images:
 
   # --- Database & Data Management ---
   - name: etcd
-    source: registry.access.redhat.com/hi/etcd:3.7@sha256:11f7196511adf377894e3d12786854f92cbc35ecf13da3307a6676a67ac85c1f
+    source: registry.access.redhat.com/hi/etcd:3.7@sha256:d48d1927c6368716ab37f8c146f157300686048d65b06c52fd83e90bf58ac808
   - name: etcd
     source: registry.access.redhat.com/hi/etcd:3.7-builder@sha256:919044c1b6053e41d5980cf2a1dfb08cf3f7e6ce879718e68b382c89787c7498
 
