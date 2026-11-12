@@ -84,7 +84,7 @@ images:
   - name: rust
     source: registry.access.redhat.com/hi/rust:1.99@sha256:3940bcd47612f953ee1af2cea4978074bea4f803b4a7da173efdd751b7532364
   - name: rust
-    source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:5062396309f344f443eb7f26cffd70108f83d852fe5b16cd44da3fe8ac68a4b0
+    source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:2782d902b6323919c8f1787fed49b02d22d5137c2daf3678ed7166fd2997303a
 
   # --- Database & Data Management ---
   - name: etcd
