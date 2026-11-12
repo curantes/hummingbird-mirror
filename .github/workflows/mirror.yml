@@ -7,6 +7,7 @@ on:
       - 'mirror/**'
       - 'tests/**'
       - 'policy/keys/**'
+      - '.github/scripts/**'
       - '.github/workflows/mirror.yml'
       - '.github/workflows/verify-promote.yml'
   # Runs on every PR so the required "Mirror Result" check always reports;
@@ -14,7 +15,8 @@ on:
   pull_request:
     branches: [ "main" ]
   # Weekly re-audit of every approved digest: re-verifies the upstream
-  # signature and rescans for newly disclosed CVEs without promoting.
+  # signature, reports newly disclosed CVEs, and promotes entries whose
+  # stream tag doesn't point at the pinned digest yet.
   schedule:
     - cron: '0 3 * * 1'
   workflow_dispatch:
@@ -35,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read  # Pushes compare mirror tags with the allowlist
+      packages: read  # Resolves the digest behind each mirror stream tag
     outputs:
       changed: ${{ steps.plan.outputs.changed }}
       matrix: ${{ steps.plan.outputs.matrix }}
@@ -50,17 +52,16 @@ jobs:
 
       # Cosign first: the regctl installer verifies its download with it.
       - name: Install Cosign
-        if: github.event_name == 'push'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Install regctl
-        if: github.event_name == 'push'
         uses: regclient/actions/regctl-installer@dd58ad94f76adb73d8ac1bf75ed25f01545d5b32 # v0.2.0
         with:
           release: v0.11.7
 
+      # The mirror packages are public, so PR runs read them anonymously.
       - name: Log in to GHCR
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4
         with:
           registry: ghcr.io
@@ -70,6 +71,12 @@ jobs:
       # PRs and pushes check entries whose source changed or whose tests
       # changed; pushes also retry entries not promoted yet. Pipeline changes,
       # the weekly re-audit and manual runs check every entry.
+      #
+      # Each entry gets a baseline: the digest its mirror stream tag points
+      # at, which is what consumers keep getting if the pinned digest is
+      # rejected. verify-promote.yml derives the gate mode from it. An entry
+      # is promoted on manual runs, and on pushes and scheduled runs when the
+      # stream tag doesn't point at the pinned digest.
       - name: Plan Images
         id: plan
         env:
@@ -77,7 +84,7 @@ jobs:
           PUSH_BEFORE: ${{ github.event.before }}
         run: |
           ALL="$(yq -o=json -I=0 '.images' mirror/images.yaml \
-            | jq -c 'map({name, source} + {tag: (.source | split("@")[0] | split(":") | last)})')"
+            | jq -c 'map({name, source} + {tag: (.source | split("@")[0] | split(":") | last), digest: (.source | split("@") | last)})')"
           DUPES="$(jq -r 'group_by(.name + ":" + .tag) | map(select(length > 1) | .[0].name + ":" + .[0].tag) | join(", ")' <<< "$ALL")"
           if [ -n "$DUPES" ]; then
             echo "Duplicate mirror tags in mirror/images.yaml: $DUPES"
@@ -95,7 +102,7 @@ jobs:
           else
             # Outside any `if` so a failed diff fails the job instead of skipping
             CHANGED_FILES="$(git diff --name-only "$BASE" HEAD)"
-            if grep -qE '^(policy/keys/|\.github/workflows/(mirror|verify-promote)\.yml$)' <<< "$CHANGED_FILES"; then
+            if grep -qE '^(policy/keys/|\.github/scripts/|\.github/workflows/(mirror|verify-promote)\.yml$)' <<< "$CHANGED_FILES"; then
               MATRIX="$ALL"
               echo "Pipeline changed: checking every entry."
             else
@@ -109,35 +116,72 @@ jobs:
             fi
           fi
 
+          # Fallback for PR runs that can't read the mirror anonymously: the
+          # digest pinned for the same name and tag in the base commit.
+          BASE_DIGESTS='{}'
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            BASE_DIGESTS="$(git show "$PR_BASE:mirror/images.yaml" 2>/dev/null \
+              | yq -o=json -I=0 '.images' \
+              | jq -c 'map({(.name + ":" + (.source | split("@")[0] | split(":") | last)): (.source | split("@") | last)}) | add // {}' \
+              || echo '{}')"
+          fi
+          baseline() {
+            local name="$1" tag="$2"
+            if regctl image digest "$MIRROR/$name:$tag" < /dev/null 2> /dev/null; then
+              return 0
+            fi
+            # The tag can't be read. If the repository can be listed, the
+            # tag doesn't exist: no baseline. Otherwise the package is new
+            # or the anonymous read failed, so PRs use the base commit.
+            if [ "$GITHUB_EVENT_NAME" = "pull_request" ] \
+                && ! regctl tag ls "$MIRROR/$name" < /dev/null > /dev/null 2>&1; then
+              jq -r --arg k "$name:$tag" '.[$k] // ""' <<< "$BASE_DIGESTS"
+            fi
+          }
+
           # Only one run per concurrency group can be pending, so a push run
           # can be cancelled before it starts and its entries would never be
           # retried. Tags move only after approval, so a stream tag that
           # doesn't point at the pinned digest (or can't be read) marks an
-          # entry that still needs promoting.
-          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            UNPROMOTED="$(jq -r --argjson m "$MATRIX" '.[] | select(IN($m[]) | not) | "\(.name) \(.tag) \(.source | split("@") | last)"' <<< "$ALL" \
-              | while read -r name tag digest; do
-                  if [ "$(regctl image digest "$MIRROR/$name:$tag" 2> /dev/null)" != "$digest" ]; then
-                    echo "$name:$tag"
-                  fi
-                done | jq -Rsc 'split("\n") | map(select(. != ""))')"
-            if [ "$UNPROMOTED" != "[]" ]; then
-              echo "Retrying entries not promoted yet: $(jq -r 'join(", ")' <<< "$UNPROMOTED")"
-              MATRIX="$(jq -c --argjson m "$MATRIX" --argjson u "$UNPROMOTED" \
-                'map(select(IN($m[]) or ((.name + ":" + .tag) | IN($u[]))))' <<< "$ALL")"
-            fi
-          fi
+          # entry that still needs promoting. Pushes therefore resolve the
+          # baseline of every entry, other events only of the selected ones.
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then TARGET="$ALL"; else TARGET="$MATRIX"; fi
+          BASELINES="$(jq -r '.[] | "\(.name) \(.tag)"' <<< "$TARGET" \
+            | while read -r name tag; do
+                jq -nc --arg k "$name:$tag" --arg d "$(baseline "$name" "$tag")" '{($k): $d}'
+              done | jq -sc 'add // {}')"
+          MATRIX="$(jq -c --argjson m "$MATRIX" --argjson b "$BASELINES" --arg event "$GITHUB_EVENT_NAME" '
+            map((.name + ":" + .tag) as $k
+              | select(IN($m[]) or ($event == "push" and $b[$k] != .digest))
+              | . + {baseline: ($b[$k] // "")}
+              | . + {promote: ($event == "workflow_dispatch"
+                  or (($event == "push" or $event == "schedule") and .baseline != .digest))})' <<< "$ALL")"
 
-          jq -r '.[] | "- \(.name):\(.tag)"' <<< "$MATRIX"
+          jq -r '.[] | "- \(.name):\(.tag) baseline=\(if .baseline == "" then "none" elif .baseline == .digest then "pinned digest" else .baseline end) promote=\(.promote)"' <<< "$MATRIX"
           {
             echo "changed=$(jq 'length > 0' <<< "$MATRIX")"
             echo "matrix=$MATRIX"
             echo "mirror=$MIRROR"
           } >> "$GITHUB_OUTPUT"
 
+  gate-tests:
+    name: Gate Script Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Test the Vulnerability Gate
+        run: .github/scripts/tests/vuln-gate-test.sh
+
   verify-promote:
     name: ${{ matrix.image.name }}:${{ matrix.image.tag }}
-    needs: plan
+    needs: [plan, gate-tests]
     if: needs.plan.outputs.changed == 'true'
     strategy:
       fail-fast: false
@@ -154,13 +198,14 @@ jobs:
       name: ${{ matrix.image.name }}
       source: ${{ matrix.image.source }}
       mirror: ${{ needs.plan.outputs.mirror }}
-      promote: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+      baseline: ${{ matrix.image.baseline }}
+      promote: ${{ matrix.image.promote }}
 
   # Single stable check for branch protection; matrix job names change as
   # images are added.
   result:
     name: Mirror Result
-    needs: [plan, verify-promote]
+    needs: [plan, gate-tests, verify-promote]
     if: always()
     runs-on: ubuntu-latest
     permissions: {}
@@ -169,10 +214,12 @@ jobs:
         env:
           CHANGED: ${{ needs.plan.outputs.changed }}
           PLAN: ${{ needs.plan.result }}
+          GATE_TESTS: ${{ needs.gate-tests.result }}
           VERIFY: ${{ needs.verify-promote.result }}
         run: |
-          echo "plan=$PLAN verify-promote=$VERIFY changed=$CHANGED"
+          echo "plan=$PLAN gate-tests=$GATE_TESTS verify-promote=$VERIFY changed=$CHANGED"
           [ "$PLAN" = "success" ] || exit 1
+          [ "$GATE_TESTS" = "success" ] || exit 1
           if [ "$CHANGED" = "true" ]; then
             [ "$VERIFY" = "success" ]
           else
@@ -180,9 +227,11 @@ jobs:
           fi
 
   # Re-audits and promotions run unattended (Renovate automerges digest
-  # refreshes), so track failures in one issue. Pushes retry entries not
-  # promoted yet but don't recheck approved digests, so only a full run
-  # (weekly re-audit or manual) closes it.
+  # refreshes), so track failures in one issue. Vulnerabilities in an
+  # approved digest are reported, not failed, so the issue marks real
+  # failures: signature, tests, package detection, regressions, promotion.
+  # Pushes retry entries not promoted yet but don't recheck approved
+  # digests, so only a full run (weekly re-audit or manual) closes it.
   alert:
     name: Alert on Failure
     needs: result
@@ -213,5 +262,5 @@ jobs:
             gh label create "$LABEL" --color B60205 --description "Mirror re-audit or promotion failed" --force
             gh issue create --title "Mirror run failing on main" --label "$LABEL" --body "$MESSAGE
 
-          Approved digests may have failed re-verification or picked up a fixable HIGH/CRITICAL CVE, or a promotion did not complete. Mirror tags stay on the last approved digest until a run passes. Pushes retry entries that aren't promoted yet but don't recheck approved digests, so run the workflow manually to re-check every entry. This issue closes automatically when the next full run (manual or weekly re-audit) passes."
+          An approved digest may have failed re-verification, its tests or package detection, a pinned digest may add fixable HIGH/CRITICAL vulnerabilities that the mirrored one does not have, or a promotion did not complete. Mirror tags stay on the last approved digest until a run passes. Pushes retry entries that aren't promoted yet but don't recheck approved digests, so run the workflow manually to re-check every entry. This issue closes automatically when the next full run (manual or weekly re-audit) passes."
           fi

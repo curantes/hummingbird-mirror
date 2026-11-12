@@ -1,0 +1,76 @@
+{
+  "matches": [
+    {
+      "vulnerability": {
+        "id": "CVE-2026-1001",
+        "severity": "High",
+        "fix": {
+          "state": "fixed",
+          "versions": [
+            "3.5.4-3"
+          ]
+        }
+      },
+      "artifact": {
+        "name": "openssl-libs",
+        "version": "3.5.4-2",
+        "type": "rpm"
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "GHSA-aaaa-bbbb-cccc",
+        "severity": "High",
+        "fix": {
+          "state": "fixed",
+          "versions": [
+            "2.33.1"
+          ]
+        }
+      },
+      "artifact": {
+        "name": "requests",
+        "version": "2.33.0",
+        "type": "python"
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "CVE-2026-1003",
+        "severity": "Critical",
+        "fix": {
+          "state": "fixed",
+          "versions": [
+            "1.3.2-2"
+          ]
+        }
+      },
+      "artifact": {
+        "name": "zlib",
+        "version": "1.3.2-1",
+        "type": "rpm"
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "CVE-2026-2001",
+        "severity": "Medium",
+        "fix": {
+          "state": "fixed",
+          "versions": [
+            "8.23.1"
+          ]
+        }
+      },
+      "artifact": {
+        "name": "curl",
+        "version": "8.23.0",
+        "type": "rpm"
+      }
+    }
+  ],
+  "descriptor": {
+    "name": "grype",
+    "version": "0.0.0-fixture"
+  }
+}

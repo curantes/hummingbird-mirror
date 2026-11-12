@@ -1,0 +1,55 @@
+{
+  "matches": [
+    {
+      "vulnerability": {
+        "id": "CVE-2026-2001",
+        "severity": "Medium",
+        "fix": {
+          "state": "fixed",
+          "versions": [
+            "8.23.1"
+          ]
+        }
+      },
+      "artifact": {
+        "name": "curl",
+        "version": "8.23.0",
+        "type": "rpm"
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "CVE-2026-2002",
+        "severity": "High",
+        "fix": {
+          "state": "not-fixed",
+          "versions": []
+        }
+      },
+      "artifact": {
+        "name": "ncurses-libs",
+        "version": "6.5-1",
+        "type": "rpm"
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "CVE-2026-2003",
+        "severity": "Critical",
+        "fix": {
+          "state": "wont-fix",
+          "versions": []
+        }
+      },
+      "artifact": {
+        "name": "bash",
+        "version": "5.3-1",
+        "type": "rpm"
+      }
+    }
+  ],
+  "descriptor": {
+    "name": "grype",
+    "version": "0.0.0-fixture"
+  }
+}
