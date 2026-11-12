@@ -101,7 +101,7 @@ images:
   - name: curl
     source: registry.access.redhat.com/hi/curl:8.23@sha256:c023f0ad04c959a7ee5dc9fd379ef6f89a79fe8b8beb29dffd030bdd85e36e06
   - name: curl
-    source: registry.access.redhat.com/hi/curl:8.23-builder@sha256:4c3e6a7dc263e37643d155253cf9799a77c88ddeaf3f2ac799b7efd0ea681aae
+    source: registry.access.redhat.com/hi/curl:8.23-builder@sha256:0c6c4759e281befd5b48d5dc4a66771a894fc6205f6adab750fee381593487f3
 
   - name: git
     source: registry.access.redhat.com/hi/git:2.56@sha256:0564a18fdd5eab4af911e17c459c72c7e22ea7c55bd6ea176e4955ccc5a58345
