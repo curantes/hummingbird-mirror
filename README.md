@@ -119,7 +119,7 @@ ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
 [`mirror.yml`](.github/workflows/mirror.yml) reads the allowlist and runs [`verify-promote.yml`](.github/workflows/verify-promote.yml) for every entry:
 
-1. **Verify upstream:** the source must be pinned by digest to a multi-arch index (amd64 and arm64). The Red Hat signature and SPDX SBOM attestation must verify against Red Hat release key 3 ([`policy/keys/redhat-release3.pub`](policy/keys/redhat-release3.pub)). The upstream version must belong to the tag's stream (`go:1.26` must contain 1.26.x).
+1. **Verify upstream:** the source must be pinned by digest to a multi-arch index (amd64 and arm64). The Red Hat signature and SPDX SBOM attestation must verify against an upstream key in [`policy/keys/`](policy/keys), today Red Hat release key 3 ([`redhat-release3.pub`](policy/keys/redhat-release3.pub)). The upstream version must belong to the tag's stream (`go:1.26` must contain 1.26.x).
 2. **Test and scan** natively on amd64 and arm64:
    - sanity tests from `tests/<name>/test.sh`
    - a Syft SBOM, with a check that Hummingbird OS and its RPMs are detected
@@ -149,6 +149,17 @@ A refresh is compared with the baseline because upstream rebuilds often still ca
 The weekly run reports the findings of approved digests without failing on them. It still fails, and opens a `mirror-alert` issue, when a signature, a test or package detection fails.
 
 Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes digests and never moves an entry to another stream. Each entry gets its own PR, which merges automatically once the checks pass, so an image that fails doesn't hold back the others. Updates to the actions and tools the mirror workflows use are not merged automatically: the VSA is trusted because `verify-promote.yml` on `main` signs it, so those changes get a review.
+
+### Upstream Keys
+
+The pipeline tries every `policy/keys/*.pub` and accepts an image when one of them verifies its signature, and one its SBOM attestation ([`verify-upstream.sh`](.github/scripts/verify-upstream.sh)). That allows a key rotation without a gap. When a new Red Hat release key is announced:
+
+1. Add the new public key as `policy/keys/<name>.pub`. Take it from the Red Hat [product signing keys](https://access.redhat.com/security/team/key) page and check its fingerprint there. Keep the old key: digests that are already mirrored are signed with it.
+2. Add the same key to [`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml) as another `- keys:` entry of the first attestor set, and set `count: 1` on that set so that either key is enough. The `Policy Keys` check fails until the policy and `policy/keys/` contain the same keys.
+3. Open a PR. A change under `policy/keys/` re-checks every entry, and the `Policy` workflow tests the policy in a cluster.
+4. Tell consumers to update their copy of the policy.
+
+Remove the old key, in both places, only when no mirrored digest you still support is signed with it.
 
 ### Why Grype (not Trivy)
 

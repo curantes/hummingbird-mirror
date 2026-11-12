@@ -22,7 +22,10 @@ spec:
               kinds:
                 - Pod
       verifyImages:
-        # Red Hat's signature, copied with the image (cosign .sig format)
+        # Red Hat's signature, copied with the image (cosign .sig format).
+        # The keys here must be the ones in policy/keys/*.pub (checked in CI).
+        # To trust a second key, add `count: 1` next to `entries` and another
+        # `- keys:` entry; see "Upstream Keys" in the README.
         - imageReferences:
             - "ghcr.io/curantes/hummingbird-mirror/*"
           mutateDigest: true

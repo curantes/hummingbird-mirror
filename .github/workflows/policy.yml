@@ -1,0 +1,102 @@
+name: Policy
+
+# Tests policy/verify-hummingbird-mirror.yaml, the Kyverno policy consumers
+# use to admit only approved images from the mirror.
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'policy/**'
+      - '.github/scripts/check-policy-keys.sh'
+      - '.github/scripts/policy-admission-test.sh'
+      - '.github/workflows/policy.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'policy/**'
+      - '.github/scripts/check-policy-keys.sh'
+      - '.github/scripts/policy-admission-test.sh'
+      - '.github/workflows/policy.yml'
+  # The mirrored images, their attestations and the registry change without
+  # a commit here, so check weekly that the policy still admits them.
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  # Must be at least the policy's `policies.kyverno.io/minversion`.
+  # renovate: datasource=github-releases depName=kyverno/kyverno
+  KYVERNO_VERSION: v1.20.0
+  # renovate: datasource=github-releases depName=kubernetes-sigs/kind
+  KIND_VERSION: v0.33.0
+
+jobs:
+  keys:
+    name: Policy Keys
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Compare Policy Keys with policy/keys
+        run: .github/scripts/check-policy-keys.sh
+
+  admission:
+    name: Policy Admission (Kyverno)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create kind Cluster
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            -o "$RUNNER_TEMP/kind" "https://github.com/kubernetes-sigs/kind/releases/download/$KIND_VERSION/kind-linux-amd64"
+          chmod +x "$RUNNER_TEMP/kind"
+          "$RUNNER_TEMP/kind" version
+          "$RUNNER_TEMP/kind" create cluster --name policy-test --wait 180s
+          # Pods can only be created once the default service account exists.
+          for _ in $(seq 1 30); do
+            kubectl get serviceaccount default > /dev/null 2>&1 && break
+            sleep 2
+          done
+          kubectl get serviceaccount default
+
+      - name: Install Kyverno
+        run: |
+          MIN="$(yq '.metadata.annotations."policies.kyverno.io/minversion"' policy/verify-hummingbird-mirror.yaml)"
+          if [ "$(printf '%s\n' "$MIN" "${KYVERNO_VERSION#v}" | sort -V | head -n 1)" != "$MIN" ]; then
+            echo "Kyverno $KYVERNO_VERSION is older than the policy's minimum version $MIN"
+            exit 1
+          fi
+          # `create`, not `apply`: the CRDs exceed the annotation size limit.
+          kubectl create -f "https://github.com/kyverno/kyverno/releases/download/$KYVERNO_VERSION/install.yaml"
+          kubectl -n kyverno rollout status deployment/kyverno-admission-controller --timeout=300s
+
+      - name: Apply the Policy
+        run: |
+          kubectl apply -f policy/verify-hummingbird-mirror.yaml
+          kubectl wait --for=condition=Ready --timeout=120s clusterpolicy/verify-hummingbird-mirror
+
+      - name: Test Admission
+        run: .github/scripts/policy-admission-test.sh
+
+      - name: Show Kyverno Logs
+        if: failure()
+        run: |
+          kubectl get clusterpolicy -o wide || true
+          kubectl -n kyverno get pods -o wide || true
+          kubectl -n kyverno logs deployment/kyverno-admission-controller --tail=200 || true
