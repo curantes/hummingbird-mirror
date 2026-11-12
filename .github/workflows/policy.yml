@@ -95,7 +95,20 @@ jobs:
 
       - name: Apply the Policy
         run: |
-          kubectl apply -f policy/verify-hummingbird-mirror.yaml
+          # The deployment is available before Kyverno has issued its webhook
+          # certificate, so the first attempts can fail with "connection
+          # refused" from the policy webhook.
+          for attempt in $(seq 1 12); do
+            if kubectl apply -f policy/verify-hummingbird-mirror.yaml; then
+              break
+            fi
+            if [ "$attempt" -eq 12 ]; then
+              echo "The policy could not be applied after $attempt attempts"
+              exit 1
+            fi
+            echo "Attempt $attempt failed; retrying in 10s"
+            sleep 10
+          done
           kubectl wait --for=condition=Ready --timeout=120s clusterpolicy/verify-hummingbird-mirror
 
       - name: Test Admission
