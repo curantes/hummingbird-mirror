@@ -58,7 +58,7 @@ images:
   - name: php
     source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:cacb720beb11acb10e870f8e63c753969065cfba004e358db28f64c03fba6277
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:2ab751973e1a43b56a2d9e649b13f110766ffcc5de2c67bb5b8eca72a104ae37
+    source: registry.access.redhat.com/hi/php:8.5-fpm-builder@sha256:f1628a61ca657898a6d96db6b0ef62f8e103ed6dbcf16ee270a358ded19a2be4
 
   - name: python
     source: registry.access.redhat.com/hi/python:3.11@sha256:d9608ef8a9464512d8230c7509b59e12c865b864f62c1aad009dc33458be05b9
