@@ -1,3 +1,5 @@
+# Legacy policy type: works with Kyverno 1.13 to 1.19. Kyverno 1.20 and later
+# reject kyverno.io/v1 policies and need an ImageValidatingPolicy instead.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:

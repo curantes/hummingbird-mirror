@@ -27,9 +27,12 @@ on:
 permissions: {}
 
 env:
-  # Must be at least the policy's `policies.kyverno.io/minversion`.
-  # renovate: datasource=github-releases depName=kyverno/kyverno
-  KYVERNO_VERSION: v1.20.0
+  # Must be at least the policy's `policies.kyverno.io/minversion` and
+  # below 1.20: the policy is a legacy kyverno.io/v1 ClusterPolicy, which
+  # Kyverno 1.20 no longer accepts. Not tracked by Renovate until the policy
+  # is migrated to ImageValidatingPolicy, because 1.19 is the last usable
+  # minor version.
+  KYVERNO_VERSION: v1.19.2
   # renovate: datasource=github-releases depName=kubernetes-sigs/kind
   KIND_VERSION: v0.33.0
 
@@ -80,6 +83,10 @@ jobs:
           MIN="$(yq '.metadata.annotations."policies.kyverno.io/minversion"' policy/verify-hummingbird-mirror.yaml)"
           if [ "$(printf '%s\n' "$MIN" "${KYVERNO_VERSION#v}" | sort -V | head -n 1)" != "$MIN" ]; then
             echo "Kyverno $KYVERNO_VERSION is older than the policy's minimum version $MIN"
+            exit 1
+          fi
+          if [ "$(printf '%s\n' "1.20.0" "${KYVERNO_VERSION#v}" | sort -V | head -n 1)" = "1.20.0" ]; then
+            echo "Kyverno $KYVERNO_VERSION no longer accepts the legacy ClusterPolicy; use a version below 1.20"
             exit 1
           fi
           # `create`, not `apply`: the CRDs exceed the annotation size limit.

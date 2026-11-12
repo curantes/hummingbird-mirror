@@ -183,7 +183,7 @@ gh attestation verify "oci://$IMAGE" --bundle-from-oci \
 
 The VSA lists what was checked in `verifiedLevels`: `UPSTREAM_SIGNATURE_VERIFIED`, `UPSTREAM_SBOM_ATTESTATION_VERIFIED`, `SANITY_TESTS_PASSED`, and either `NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES` (new stream) or `NO_VULNERABILITY_REGRESSION` (refresh). Its `vulnerabilityGate` field records the gate mode, the baseline digest, and the Grype version and database build date of each architecture's scan.
 
-[`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml) is a Kyverno (≥ 1.13) policy that enforces both checks at admission. It requires a VSA with `verificationResult: PASSED` and doesn't look at the levels.
+[`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml) is a Kyverno policy (1.13 to 1.19) that enforces both checks at admission. It requires a VSA with `verificationResult: PASSED` and doesn't look at the levels.
 
 ## Known Limitations
 
@@ -192,6 +192,7 @@ The VSA lists what was checked in `verifiedLevels`: `UPSTREAM_SIGNATURE_VERIFIED
 - A mirrored image can have fixable HIGH/CRITICAL vulnerabilities. A refresh only has to be no worse than the digest it replaces, and vulnerabilities disclosed after promotion don't remove an image. Scan the digests you deploy.
 - The VSA means "passed our checks at promotion time". It doesn't expire and isn't withdrawn when new vulnerabilities are disclosed. VSAs issued before the regression gate carry `NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES` and no `vulnerabilityGate` field.
 - The Kyverno policy hasn't been tested in a cluster yet.
+- The Kyverno policy is a legacy `kyverno.io/v1` `ClusterPolicy`. Kyverno 1.20 and later no longer accept that type, so the policy works with Kyverno 1.13 to 1.19 only. It has not been migrated to `ImageValidatingPolicy` yet.
 
 ## Running Tests Locally
 
