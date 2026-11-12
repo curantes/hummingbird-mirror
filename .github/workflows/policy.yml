@@ -1,7 +1,8 @@
 name: Policy
 
-# Tests policy/verify-hummingbird-mirror.yaml, the Kyverno policy consumers
-# use to admit only approved images from the mirror.
+# Tests the Kyverno policies consumers use to admit only approved images
+# from the mirror: an ImageValidatingPolicy for current Kyverno and a legacy
+# ClusterPolicy for Kyverno 1.19 and older, each in a kind cluster.
 
 on:
   push:
@@ -27,12 +28,13 @@ on:
 permissions: {}
 
 env:
-  # Must be at least the policy's `policies.kyverno.io/minversion` and
-  # below 1.20: the policy is a legacy kyverno.io/v1 ClusterPolicy, which
-  # Kyverno 1.20 no longer accepts. Not tracked by Renovate until the policy
-  # is migrated to ImageValidatingPolicy, because 1.19 is the last usable
-  # minor version.
-  KYVERNO_VERSION: v1.19.2
+  # Kyverno for policy/verify-hummingbird-mirror-ivp.yaml (ImageValidatingPolicy).
+  # renovate: datasource=github-releases depName=kyverno/kyverno
+  KYVERNO_VERSION: v1.20.0
+  # Kyverno for the legacy ClusterPolicy in policy/verify-hummingbird-mirror.yaml.
+  # Kyverno 1.20 no longer accepts kyverno.io/v1 policies, so this stays on
+  # the last 1.19 release and is not tracked by Renovate.
+  KYVERNO_LEGACY: v1.19.2
   # renovate: datasource=github-releases depName=kubernetes-sigs/kind
   KIND_VERSION: v0.33.0
 
@@ -50,14 +52,38 @@ jobs:
           persist-credentials: false
 
       - name: Compare Policy Keys with policy/keys
-        run: .github/scripts/check-policy-keys.sh
+        run: |
+          .github/scripts/check-policy-keys.sh policy/verify-hummingbird-mirror-ivp.yaml
+          .github/scripts/check-policy-keys.sh policy/verify-hummingbird-mirror.yaml
 
   admission:
-    name: Policy Admission (Kyverno)
+    name: Policy Admission (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ImageValidatingPolicy
+            policy: policy/verify-hummingbird-mirror-ivp.yaml
+            resource: imagevalidatingpolicy/verify-hummingbird-mirror
+            ready: jsonpath={.status.conditionStatus.ready}=true
+            kyverno: KYVERNO_VERSION
+            below: ''
+          - name: legacy ClusterPolicy
+            policy: policy/verify-hummingbird-mirror.yaml
+            resource: clusterpolicy/verify-hummingbird-mirror
+            ready: condition=Ready
+            kyverno: KYVERNO_LEGACY
+            below: 1.20.0
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
+    env:
+      POLICY_FILE: ${{ matrix.policy }}
+      POLICY_RESOURCE: ${{ matrix.resource }}
+      POLICY_READY: ${{ matrix.ready }}
+      KYVERNO_VAR: ${{ matrix.kyverno }}
+      KYVERNO_BELOW: ${{ matrix.below }}
     steps:
       - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -80,17 +106,20 @@ jobs:
 
       - name: Install Kyverno
         run: |
-          MIN="$(yq '.metadata.annotations."policies.kyverno.io/minversion"' policy/verify-hummingbird-mirror.yaml)"
-          if [ "$(printf '%s\n' "$MIN" "${KYVERNO_VERSION#v}" | sort -V | head -n 1)" != "$MIN" ]; then
-            echo "Kyverno $KYVERNO_VERSION is older than the policy's minimum version $MIN"
+          KYVERNO="${!KYVERNO_VAR}"
+          MIN="$(yq '.metadata.annotations."policies.kyverno.io/minversion"' "$POLICY_FILE")"
+          if [ "$(printf '%s\n' "$MIN" "${KYVERNO#v}" | sort -V | head -n 1)" != "$MIN" ]; then
+            echo "Kyverno $KYVERNO is older than the policy's minimum version $MIN"
             exit 1
           fi
-          if [ "$(printf '%s\n' "1.20.0" "${KYVERNO_VERSION#v}" | sort -V | head -n 1)" = "1.20.0" ]; then
-            echo "Kyverno $KYVERNO_VERSION no longer accepts the legacy ClusterPolicy; use a version below 1.20"
+          if [ -n "$KYVERNO_BELOW" ] \
+              && [ "$(printf '%s\n' "$KYVERNO_BELOW" "${KYVERNO#v}" | sort -V | head -n 1)" = "$KYVERNO_BELOW" ]; then
+            echo "Kyverno $KYVERNO does not accept $POLICY_FILE; use a version below $KYVERNO_BELOW"
             exit 1
           fi
+          echo "Testing $POLICY_FILE on Kyverno $KYVERNO"
           # `create`, not `apply`: the CRDs exceed the annotation size limit.
-          kubectl create -f "https://github.com/kyverno/kyverno/releases/download/$KYVERNO_VERSION/install.yaml"
+          kubectl create -f "https://github.com/kyverno/kyverno/releases/download/$KYVERNO/install.yaml"
           kubectl -n kyverno rollout status deployment/kyverno-admission-controller --timeout=300s
 
       - name: Apply the Policy
@@ -99,7 +128,7 @@ jobs:
           # certificate, so the first attempts can fail with "connection
           # refused" from the policy webhook.
           for attempt in $(seq 1 12); do
-            if kubectl apply -f policy/verify-hummingbird-mirror.yaml; then
+            if kubectl apply -f "$POLICY_FILE"; then
               break
             fi
             if [ "$attempt" -eq 12 ]; then
@@ -109,7 +138,7 @@ jobs:
             echo "Attempt $attempt failed; retrying in 10s"
             sleep 10
           done
-          kubectl wait --for=condition=Ready --timeout=120s clusterpolicy/verify-hummingbird-mirror
+          kubectl wait --for="$POLICY_READY" --timeout=120s "$POLICY_RESOURCE"
 
       - name: Test Admission
         run: .github/scripts/policy-admission-test.sh
@@ -117,6 +146,8 @@ jobs:
       - name: Show Kyverno Logs
         if: failure()
         run: |
-          kubectl get clusterpolicy -o wide || true
+          kubectl get "$POLICY_RESOURCE" -o yaml || true
           kubectl -n kyverno get pods -o wide || true
-          kubectl -n kyverno logs deployment/kyverno-admission-controller --tail=200 || true
+          # Without Kyverno's trace and debug lines
+          kubectl -n kyverno logs deployment/kyverno-admission-controller --tail=2000 \
+            | grep -v -e 'TRC' -e 'DBG' | tail -n 80 || true

@@ -1,0 +1,81 @@
+# For Kyverno 1.20 and later. Clusters on Kyverno 1.13 to 1.19 use the legacy
+# ClusterPolicy in verify-hummingbird-mirror.yaml instead; install only one.
+apiVersion: policies.kyverno.io/v1
+kind: ImageValidatingPolicy
+metadata:
+  name: verify-hummingbird-mirror
+  annotations:
+    policies.kyverno.io/title: Verify Mirrored Hummingbird Images
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/minversion: 1.20.0
+    policies.kyverno.io/description: >-
+      Admits images from ghcr.io/curantes/hummingbird-mirror/* only when
+      they carry Red Hat's original signature (release key 3) and a passing SLSA
+      verification summary attestation issued by the verify-promote workflow on main.
+spec:
+  validationActions: [Deny]
+  failurePolicy: Fail
+  webhookConfiguration:
+    timeoutSeconds: 30
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  matchImageReferences:
+    - glob: "ghcr.io/curantes/hummingbird-mirror/*"
+  attestors:
+    # Red Hat's signing key, as in policy/keys/*.pub (checked in CI). To
+    # trust a second key, add another attestor and list it next to this one
+    # in the first validation; see "Upstream Keys" in the README.
+    - name: redhatRelease3
+      cosign:
+        key:
+          data: |-
+            -----BEGIN PUBLIC KEY-----
+            MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA0ASyuH2TLWvBUqPHZ4Ip
+            75g7EncBkgQHdJnjzxAW5KQTMh/siBoB/BoSrtiPMwnChbTCnQOIQeZuDiFnhuJ7
+            M/D3b7JoX0m123NcCSn67mAdjBa6Bg6kukZgCP4ZUZeESajWX/EjylFcRFOXW57p
+            RDCEN42J/jYlVqt+g9+Grker8Sz86H3l0tbqOdjbz/VxHYhwF0ctUMHsyVRDq2QP
+            tqzNXlmlMhS/PoFr6R4u/7HCn/K+LegcO2fAFOb40KvKSKKVD6lewUZErhop1CgJ
+            XjDtGmmO9dGMF71mf6HEfaKSdy+EE6iSF2A2Vv9QhBawMiq2kOzEiLg4nAdJT8wg
+            ZrMAmPCqGIsXNGZ4/Q+YTwwlce3glqb5L9tfNozEdSR9N85DESfQLQEdY3CalwKM
+            BT1OEhEX1wHRCU4drMOej6BNW0VtscGtHmCrs74jPezhwNT8ypkyS+T0zT4Tsy6f
+            VXkJ8YSHyenSzMB2Op2bvsE3grY+s74WhG9UIA6DBxcTie15NSzKwfzaoNWODcLF
+            p7BY8aaHE2MqFxYFX+IbjpkQRfaeQQsouDFdCkXEFVfPpbD2dk6FleaMTPuyxtIT
+            gjVEtGQK2qGCFGiQHFd4hfV+eCA63Jro1z0zoBM5BbIIQ3+eVFwt3AlZp5UVwr6d
+            secqki/yrmv3Y0dqZ9VOn3UCAwEAAQ==
+            -----END PUBLIC KEY-----
+        # Red Hat does not upload to the public Rekor log
+        ctlog:
+          insecureIgnoreTlog: true
+          insecureIgnoreSCT: true
+    # Our approval is signed keyless by the verify-promote workflow on main
+    - name: mirrorWorkflow
+      cosign:
+        keyless:
+          identities:
+            - issuer: https://token.actions.githubusercontent.com
+              subject: "https://github.com/curantes/hummingbird-mirror/.github/workflows/verify-promote.yml@refs/heads/main"
+        ctlog:
+          url: https://rekor.sigstore.dev
+  attestations:
+    - name: vsa
+      intoto:
+        type: https://slsa.dev/verification_summary/v1
+  validations:
+    # Red Hat's signature, copied with the image
+    - expression: >-
+        (images.containers + images.initContainers + images.ephemeralContainers)
+        .map(image, verifyImageSignatures(image, [attestors.redhatRelease3])).all(e, e > 0)
+      message: The image is not signed with a trusted Red Hat release key.
+    # Our approval: a VSA stored as a Sigstore bundle (OCI referrer)
+    - expression: >-
+        (images.containers + images.initContainers + images.ephemeralContainers)
+        .map(image, verifyAttestationSignatures(image, attestations.vsa, [attestors.mirrorWorkflow])).all(e, e > 0)
+      message: The image has no verification summary attestation signed by the verify-promote workflow on main.
+    - expression: >-
+        (images.containers + images.initContainers + images.ephemeralContainers)
+        .map(image, extractPayload(image, attestations.vsa).predicate.verificationResult == "PASSED").all(e, e)
+      message: The verification summary attestation does not have the result PASSED.
