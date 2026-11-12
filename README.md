@@ -155,11 +155,9 @@ Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes di
 The pipeline tries every `policy/keys/*.pub` and accepts an image when one of them verifies its signature, and one its SBOM attestation ([`verify-upstream.sh`](.github/scripts/verify-upstream.sh)). That allows a key rotation without a gap. When a new Red Hat release key is announced:
 
 1. Add the new public key as `policy/keys/<name>.pub`. Take it from the Red Hat [product signing keys](https://access.redhat.com/security/team/key) page and check its fingerprint there. Keep the old key: digests that are already mirrored are signed with it.
-2. Add the same key to both Kyverno policies, so that either key is enough. The `Policy Keys` check fails until each policy and `policy/keys/` contain the same keys.
-   - [`verify-hummingbird-mirror-ivp.yaml`](policy/verify-hummingbird-mirror-ivp.yaml): add another attestor and list it next to the existing one in the first validation (`[attestors.redhatRelease3, attestors.<new>]`).
-   - [`verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml): add another `- keys:` entry to the first attestor set and set `count: 1` on that set.
+2. Add the same key to [`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml): add another attestor and list it next to the existing one in the first validation (`[attestors.redhatRelease3, attestors.<new>]`), so that either key is enough. The `Policy Keys` check fails until the policy and `policy/keys/` contain the same keys.
 3. Open a PR. A change under `policy/keys/` re-checks every entry, and the `Policy` workflow tests the policy in a cluster.
-4. Tell consumers to update their copy of the policy they use.
+4. Tell consumers to update their copy of the policy.
 
 Remove the old key, in both places, only when no mirrored digest you still support is signed with it.
 
@@ -185,14 +183,7 @@ gh attestation verify "oci://$IMAGE" --bundle-from-oci \
 
 The VSA lists what was checked in `verifiedLevels`: `UPSTREAM_SIGNATURE_VERIFIED`, `UPSTREAM_SBOM_ATTESTATION_VERIFIED`, `SANITY_TESTS_PASSED`, and either `NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES` (new stream) or `NO_VULNERABILITY_REGRESSION` (refresh). Its `vulnerabilityGate` field records the gate mode, the baseline digest, and the Grype version and database build date of each architecture's scan.
 
-Two Kyverno policies enforce both checks at admission. Install the one that fits your Kyverno version, not both:
-
-| Kyverno | Policy | Type |
-|---|---|---|
-| 1.20 and later | [`policy/verify-hummingbird-mirror-ivp.yaml`](policy/verify-hummingbird-mirror-ivp.yaml) | `ImageValidatingPolicy` |
-| 1.13 to 1.19 | [`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml) | legacy `ClusterPolicy`, which Kyverno 1.20 no longer accepts |
-
-Both require the Red Hat signature and a VSA with `verificationResult: PASSED`, and neither looks at the levels.
+[`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml) is a Kyverno `ImageValidatingPolicy` that enforces both checks at admission. It needs Kyverno 1.20 or later. It requires the Red Hat signature and a VSA with `verificationResult: PASSED`, for containers, init containers and ephemeral containers, and doesn't look at the levels.
 
 ## Known Limitations
 
