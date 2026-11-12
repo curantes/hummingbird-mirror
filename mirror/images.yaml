@@ -17,7 +17,7 @@ images:
     source: registry.access.redhat.com/hi/core-runtime:latest@sha256:4163796d8b7f28021178093d31cb97c05336fd3f3a4d7006603a7fef29e997e7
 
   - name: static
-    source: registry.access.redhat.com/hi/static:latest@sha256:c51e17de4a96e3bd68361830ec54f3c43ffcf398b82765a1ce250bd4a0d99d1f
+    source: registry.access.redhat.com/hi/static:latest@sha256:cac22d5a26d90c14801f8e48cc99dcb8a08f270cdc9ebaa205ac5b29f8a3d2fa
 
   # --- Programming Languages & Runtimes ---
   - name: go
