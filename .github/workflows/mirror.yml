@@ -30,11 +30,14 @@ permissions: {}
 env:
   # Mirror destination; the promote job logs in to its registry.
   MIRROR: ghcr.io/curantes/hummingbird-mirror
+  # renovate: datasource=github-releases depName=regclient/regclient
+  REGCTL_VERSION: v0.11.7
 
 jobs:
   plan:
     name: Plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: read
       packages: read  # Resolves the digest behind each mirror stream tag
@@ -57,12 +60,12 @@ jobs:
       - name: Install regctl
         uses: regclient/actions/regctl-installer@dd58ad94f76adb73d8ac1bf75ed25f01545d5b32 # v0.2.0
         with:
-          release: v0.11.7
+          release: ${{ env.REGCTL_VERSION }}
 
       # The mirror packages are public, so PR runs read them anonymously.
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -207,7 +210,8 @@ jobs:
     name: Mirror Result
     needs: [plan, gate-tests, verify-promote]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions: {}
     steps:
       - name: Check Mirror Jobs
@@ -236,7 +240,8 @@ jobs:
     name: Alert on Failure
     needs: result
     if: always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       issues: write
     steps:

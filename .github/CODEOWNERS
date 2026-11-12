@@ -1,0 +1,6 @@
+# Changes to the pipeline, the consumer policy, the tests and the approved
+# digests decide what the mirror serves and what its VSA means.
+/.github/ @curantes
+/policy/  @curantes
+/tests/   @curantes
+/mirror/  @curantes

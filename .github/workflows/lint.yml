@@ -1,0 +1,62 @@
+name: Lint
+
+on:
+  push:
+    branches: [ "main" ]
+  # Unfiltered so the check always reports on PRs.
+  pull_request:
+    branches: [ "main" ]
+
+permissions: {}
+
+env:
+  # renovate: datasource=github-releases depName=rhysd/actionlint
+  ACTIONLINT_VERSION: v1.7.12
+  # renovate: datasource=github-releases depName=koalaman/shellcheck
+  SHELLCHECK_VERSION: v0.11.0
+  # renovate: datasource=github-releases depName=zizmorcore/zizmor
+  ZIZMOR_VERSION: v1.32.0
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install actionlint, ShellCheck and zizmor
+        run: |
+          BIN="$RUNNER_TEMP/lint-bin"
+          mkdir -p "$BIN"
+          fetch() { curl --fail --silent --show-error --location --retry 3 "$1"; }
+          fetch "https://github.com/rhysd/actionlint/releases/download/$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION#v}_linux_amd64.tar.gz" \
+            | tar -xz -C "$BIN" actionlint
+          fetch "https://github.com/koalaman/shellcheck/releases/download/$SHELLCHECK_VERSION/shellcheck-$SHELLCHECK_VERSION.linux.x86_64.tar.xz" \
+            | tar -xJ -C "$BIN" --strip-components=1 "shellcheck-$SHELLCHECK_VERSION/shellcheck"
+          fetch "https://github.com/zizmorcore/zizmor/releases/download/$ZIZMOR_VERSION/zizmor-x86_64-unknown-linux-gnu.tar.gz" \
+            | tar -xz -C "$BIN" zizmor
+          echo "$BIN" >> "$GITHUB_PATH"
+          "$BIN/actionlint" -version
+          "$BIN/shellcheck" --version
+          "$BIN/zizmor" --version
+
+      # Also runs ShellCheck on the workflows' `run:` scripts.
+      - name: Lint Workflows (actionlint)
+        run: actionlint
+
+      - name: Lint Shell Scripts (ShellCheck)
+        run: |
+          mapfile -t SCRIPTS < <(find .github tests -type f -name '*.sh' | sort)
+          printf '%s\n' "${SCRIPTS[@]}"
+          shellcheck "${SCRIPTS[@]}"
+
+      - name: Audit Workflows (zizmor)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: zizmor --format=github .github/
