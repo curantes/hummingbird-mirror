@@ -49,7 +49,7 @@ env:
   # renovate: datasource=github-releases depName=anchore/syft
   SYFT_VERSION: v1.54.0
   # renovate: datasource=github-releases depName=anchore/grype
-  GRYPE_VERSION: v0.118.0
+  GRYPE_VERSION: v0.121.3
   # renovate: datasource=github-releases depName=regclient/regclient
   REGCTL_VERSION: v0.11.7
 
