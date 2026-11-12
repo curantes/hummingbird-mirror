@@ -123,16 +123,30 @@ ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 2. **Test and scan** natively on amd64 and arm64:
    - sanity tests from `tests/<name>/test.sh`
    - a Syft SBOM, with a check that Hummingbird OS and its RPMs are detected
-   - a Grype gate that **fails on fixable HIGH/CRITICAL vulnerabilities**
-3. **Promote** (pushes to `main` and manual dispatch only):
+   - a Grype scan and the vulnerability gate described below
+3. **Promote** (on `main` only: manual runs, and pushes and scheduled runs for entries whose stream tag doesn't point at the pinned digest yet):
    1. Copy the image by digest with `regctl image copy --referrers`, plus the upstream cosign `.sig`/`.att`/`.sbom` tags. This keeps their Sigstore bundle referrers, including the SBOM attestation that cosign 3 verifies.
    2. Re-verify the copy against the Red Hat release key.
    3. Attest a VSA (`https://slsa.dev/verification_summary/v1`).
    4. Only then move the tags.
 
-A digest that fails is never promoted: the tags stay on the last approved digest. Scheduled weekly runs re-verify and rescan every approved digest without promoting.
+A digest that fails is never promoted: the tags stay on the last approved digest. Scheduled weekly runs re-verify and rescan every entry, and promote the ones that pass and aren't on the mirror yet.
 
-PRs and pushes to `main` check entries whose source or `tests/<name>/` changed; changes to the pipeline or `policy/keys/` check every entry. Pushes also retry every entry whose stream tag on the mirror doesn't point at its pinned digest yet, so a failed or cancelled promotion is picked up by the next push. A manual run checks and promotes every entry.
+PRs and pushes to `main` check entries whose source or `tests/<name>/` changed; changes to the pipeline (the workflows, `.github/scripts/` or `policy/keys/`) check every entry. Pushes also retry every entry whose stream tag on the mirror doesn't point at its pinned digest yet, so a failed or cancelled promotion is picked up by the next push or the next weekly run. A manual run checks and promotes every entry.
+
+### Vulnerability Gate
+
+The gate counts **fixable HIGH and CRITICAL** findings: Grype matches of that severity for which a fixed package version exists. What it requires depends on the baseline, the digest the mirror stream tag (e.g. `go:1.27`) points at when the run starts. That is the image you keep getting if the pinned digest is rejected.
+
+| Mode | When | Requirement |
+|---|---|---|
+| `new-stream` | the stream tag doesn't exist yet | no fixable HIGH/CRITICAL findings |
+| `refresh` | the stream tag points at another digest | no fixable HIGH/CRITICAL finding that the baseline doesn't have |
+| `audit` | the stream tag already points at the pinned digest | none; findings are reported in the run summary |
+
+A refresh is compared with the baseline because upstream rebuilds often still carry a few fixable findings. Rejecting such a rebuild would leave the mirror on the older digest, which has more. Both images are scanned in the same job with the same Grype database, and a finding is identified by vulnerability ID, package name and package type, so a package update that still carries the same CVE isn't counted as new. The logic lives in [`.github/scripts/vuln-gate.sh`](.github/scripts/vuln-gate.sh) and has fixture tests.
+
+The weekly run reports the findings of approved digests without failing on them. It still fails, and opens a `mirror-alert` issue, when a signature, a test or package detection fails.
 
 Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes digests and never moves an entry to another stream.
 
@@ -156,12 +170,16 @@ gh attestation verify "oci://$IMAGE" --bundle-from-oci \
   --predicate-type https://slsa.dev/verification_summary/v1
 ```
 
-[`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml) is a Kyverno (≥ 1.13) policy that enforces both checks at admission.
+The VSA lists what was checked in `verifiedLevels`: `UPSTREAM_SIGNATURE_VERIFIED`, `UPSTREAM_SBOM_ATTESTATION_VERIFIED`, `SANITY_TESTS_PASSED`, and either `NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES` (new stream) or `NO_VULNERABILITY_REGRESSION` (refresh). Its `vulnerabilityGate` field records the gate mode, the baseline digest, and the Grype version and database build date of each architecture's scan.
+
+[`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml) is a Kyverno (≥ 1.13) policy that enforces both checks at admission. It requires a VSA with `verificationResult: PASSED` and doesn't look at the levels.
 
 ## Known Limitations
 
 - The Red Hat SLSA provenance on `registry.access.redhat.com` can't be verified with their published keys. We verify their signature and SBOM attestation instead.
 - The VSA records our checks as custom `verifiedLevels`. We don't claim an upstream SLSA build level.
+- A mirrored image can have fixable HIGH/CRITICAL vulnerabilities. A refresh only has to be no worse than the digest it replaces, and vulnerabilities disclosed after promotion don't remove an image. Scan the digests you deploy.
+- The VSA means "passed our checks at promotion time". It doesn't expire and isn't withdrawn when new vulnerabilities are disclosed. VSAs issued before the regression gate carry `NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES` and no `vulnerabilityGate` field.
 - The Kyverno policy hasn't been tested in a cluster yet.
 
 ## Running Tests Locally

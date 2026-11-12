@@ -2,7 +2,9 @@ name: Mirror - Verify & Promote Image (reusable)
 
 # Verifies one upstream image and, once approved, copies it to the mirror
 # digest-preserving and together with Red Hat's signatures and attestations,
-# then attaches a SLSA verification summary attestation (VSA). The VSA is
+# then attaches a SLSA verification summary attestation (VSA). The
+# vulnerability gate compares the image with the baseline, the digest the
+# mirror stream tag points at (see .github/scripts/vuln-gate.sh). The VSA is
 # issued to this workflow's identity, so consumers pin verification to
 # `.github/workflows/verify-promote.yml@refs/heads/main`.
 
@@ -21,6 +23,11 @@ on:
         description: Mirror repository prefix (e.g. ghcr.io/curantes/hummingbird-mirror)
         required: true
         type: string
+      baseline:
+        description: Digest the mirror stream tag points at (empty if the tag does not exist)
+        required: false
+        type: string
+        default: ''
       promote:
         description: Copy the image to the mirror, attest and tag it
         required: false
@@ -32,6 +39,7 @@ permissions: {}
 env:
   NAME: ${{ inputs.name }}
   SOURCE: ${{ inputs.source }}
+  BASELINE: ${{ inputs.baseline }}
   MIRROR_IMAGE: ${{ inputs.mirror }}/${{ inputs.name }}
   # Red Hat release key 3 (https://security.access.redhat.com/data/63405576.txt)
   UPSTREAM_KEY: policy/keys/redhat-release3.pub
@@ -47,6 +55,7 @@ jobs:
       ref: ${{ steps.parse.outputs.ref }}
       digest: ${{ steps.parse.outputs.digest }}
       tag: ${{ steps.parse.outputs.tag }}
+      mode: ${{ steps.parse.outputs.mode }}
       version: ${{ steps.version.outputs.version }}
       suffix: ${{ steps.version.outputs.suffix }}
     steps:
@@ -70,10 +79,27 @@ jobs:
             echo "Missing tests/$NAME/test.sh"
             exit 1
           fi
+          # The baseline is what consumers keep getting if this digest is
+          # rejected, so it decides what the vulnerability gate checks:
+          #   new-stream  no baseline: no fixable HIGH/CRITICAL findings
+          #   refresh     baseline differs: no findings the baseline lacks
+          #   audit       baseline is the pinned digest: report only
+          if [ -z "$BASELINE" ]; then
+            MODE=new-stream
+          elif [[ ! "$BASELINE" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Baseline must be empty or a sha256 digest (got: $BASELINE)"
+            exit 1
+          elif [ "$BASELINE" = "$DIGEST" ]; then
+            MODE=audit
+          else
+            MODE=refresh
+          fi
+          echo "Gate mode: $MODE (baseline: ${BASELINE:-none})"
           {
             echo "ref=$REPO@$DIGEST"
             echo "digest=$DIGEST"
             echo "tag=$TAG"
+            echo "mode=$MODE"
           } >> "$GITHUB_OUTPUT"
 
       - name: Install Cosign
@@ -151,8 +177,12 @@ jobs:
       security-events: write
     env:
       REF: ${{ needs.verify.outputs.ref }}
+      DIGEST: ${{ needs.verify.outputs.digest }}
       TAG: ${{ needs.verify.outputs.tag }}
+      MODE: ${{ needs.verify.outputs.mode }}
+      ARCH: ${{ matrix.arch }}
       TEST_IMAGE: local/${{ inputs.name }}:${{ needs.verify.outputs.tag }}-test
+      BASELINE_IMAGE: local/${{ inputs.name }}:${{ needs.verify.outputs.tag }}-baseline
     steps:
       - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -160,8 +190,6 @@ jobs:
           persist-credentials: false
 
       - name: Pull Upstream Image
-        env:
-          ARCH: ${{ matrix.arch }}
         run: |
           docker pull --platform "linux/$ARCH" "$REF"
           docker tag "$REF" "$TEST_IMAGE"
@@ -207,13 +235,40 @@ jobs:
             fi
           fi
 
+      # The regression gate compares against what the mirror serves today,
+      # so the baseline comes from the mirror, not from upstream.
+      - name: Pull Baseline Image from Mirror
+        if: needs.verify.outputs.mode == 'refresh'
+        run: |
+          if ! docker pull --platform "linux/$ARCH" "$MIRROR_IMAGE@$BASELINE"; then
+            echo "::error::Cannot pull the baseline $MIRROR_IMAGE@$BASELINE for linux/$ARCH; the regression gate has nothing to compare with"
+            exit 1
+          fi
+          docker tag "$MIRROR_IMAGE@$BASELINE" "$BASELINE_IMAGE"
+
+      - name: Generate Baseline SBOM
+        if: needs.verify.outputs.mode == 'refresh'
+        env:
+          SYFT: ${{ steps.syft.outputs.cmd }}
+        run: |
+          "$SYFT" -q "docker:$BASELINE_IMAGE" -o syft-json=baseline.syft.json
+          # A baseline without detected packages would report no findings
+          # and turn every finding of the new digest into a regression.
+          DISTRO="$(jq -r '.distro.id // ""' baseline.syft.json)"
+          PKGS="$(jq '[.artifacts[] | select(.type == "rpm")] | length' baseline.syft.json)"
+          echo "Baseline: detected distro '$DISTRO' with $PKGS RPM packages"
+          if [ "$DISTRO" != "hummingbird" ] || [ "$PKGS" -eq 0 ]; then
+            echo "::error::Package detection failed on the baseline $MIRROR_IMAGE@$BASELINE; it cannot be compared with the new digest"
+            exit 1
+          fi
+
       - name: Install Grype
         id: grype-install
         uses: anchore/scan-action/download-grype@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
 
-      # The DB download is occasionally reset mid-transfer, and scan-action
-      # fails on the first error, so fetch it here with retries and have the
-      # gate scan against it without updating.
+      # The DB download is occasionally reset mid-transfer, so fetch it here
+      # with retries and scan against it without updating: both images are
+      # then scanned with the same database.
       - name: Update Grype Database
         env:
           GRYPE: ${{ steps.grype-install.outputs.cmd }}
@@ -225,24 +280,61 @@ jobs:
             sleep $((attempt * 15))
           done
 
-      - name: Vulnerability Scan & Gate (Grype, fixable HIGH+)
-        id: grype
-        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+      # Unfixed vulnerabilities are left out, as before; the gate script
+      # decides, so Grype itself never fails on findings here.
+      - name: Vulnerability Scan (Grype)
         env:
+          GRYPE: ${{ steps.grype-install.outputs.cmd }}
           GRYPE_DB_AUTO_UPDATE: "false"
-        with:
-          sbom: sbom.syft.json
-          fail-build: true
-          severity-cutoff: high
-          only-fixed: true
-          output-format: sarif
+        run: |
+          "$GRYPE" -q sbom:sbom.syft.json --only-fixed \
+            -o json=new.grype.json -o sarif=new.grype.sarif
+          if [ "$MODE" = "refresh" ]; then
+            "$GRYPE" -q sbom:baseline.syft.json --only-fixed -o json=baseline.grype.json
+          fi
 
       - name: Upload Grype Scan Results to GitHub Security
         uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
-        if: always() && steps.grype.outputs.sarif != ''
+        if: always() && hashFiles('new.grype.sarif') != ''
         with:
-          sarif_file: ${{ steps.grype.outputs.sarif }}
+          sarif_file: new.grype.sarif
           category: grype-${{ inputs.name }}-${{ needs.verify.outputs.tag }}-${{ matrix.arch }}
+
+      - name: Vulnerability Gate
+        env:
+          GRYPE: ${{ steps.grype-install.outputs.cmd }}
+        run: |
+          ARGS=(--mode "$MODE" --new new.grype.json --result gate-result.json
+            --summary "$GITHUB_STEP_SUMMARY" --label "$NAME:$TAG ($ARCH)")
+          if [ "$MODE" = "refresh" ]; then ARGS+=(--baseline baseline.grype.json); fi
+          .github/scripts/vuln-gate.sh "${ARGS[@]}"
+
+          # What was checked, for the verification summary. Matrix job
+          # outputs collide, so the promote job reads this as an artifact.
+          GRYPE_VERSION="$("$GRYPE" version -o json | jq -r '.version')"
+          GRYPE_DB_BUILT="$("$GRYPE" db status -o json | jq -r '.built')"
+          jq --arg arch "$ARCH" --arg digest "$DIGEST" --arg baseline "$BASELINE" \
+            --arg version "$GRYPE_VERSION" --arg built "$GRYPE_DB_BUILT" \
+            '{
+              architecture: $arch,
+              digest: $digest,
+              mode,
+              baselineDigest: $baseline,
+              pass,
+              counts,
+              grypeVersion: $version,
+              grypeDbBuilt: $built
+            }' gate-result.json > "gate-$ARCH.json"
+          cat "gate-$ARCH.json"
+
+      - name: Upload Gate Result
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gate-${{ inputs.name }}-${{ needs.verify.outputs.tag }}-${{ matrix.arch }}
+          path: gate-${{ matrix.arch }}.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
 
   promote:
     name: Promote to Mirror
@@ -258,6 +350,7 @@ jobs:
       REF: ${{ needs.verify.outputs.ref }}
       DIGEST: ${{ needs.verify.outputs.digest }}
       TAG: ${{ needs.verify.outputs.tag }}
+      MODE: ${{ needs.verify.outputs.mode }}
       VERSION: ${{ needs.verify.outputs.version }}
       SUFFIX: ${{ needs.verify.outputs.suffix }}
       GH_TOKEN: ${{ github.token }}
@@ -355,15 +448,51 @@ jobs:
             echo "approved=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Download Gate Results
+        if: steps.approval.outputs.approved == 'false'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: gate-${{ inputs.name }}-${{ needs.verify.outputs.tag }}-*
+          path: gate
+          merge-multiple: true
+
+      # verifiedLevels state what was checked: a refresh is approved because
+      # it adds no fixable HIGH/CRITICAL finding to what the mirror served,
+      # a new stream because it has none. The VSA means "passed at promotion
+      # time"; it does not expire and is not reissued by later audits.
       - name: Write Verification Summary
         if: steps.approval.outputs.approved == 'false'
         run: |
+          case "$MODE" in
+            refresh) VULN_LEVEL=NO_VULNERABILITY_REGRESSION ;;
+            new-stream) VULN_LEVEL=NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES ;;
+            *)
+              # audit: the stream tag already points at this digest, which
+              # only happens after an approval. No vulnerability gate ran,
+              # so there is nothing to attest.
+              echo "::error::$MIRROR_IMAGE:$TAG points at $DIGEST, which has no approval; refusing to issue one without a vulnerability gate"
+              exit 1
+              ;;
+          esac
+          for arch in amd64 arm64; do
+            if ! jq -e --arg digest "$DIGEST" --arg mode "$MODE" --arg baseline "$BASELINE" \
+                '.pass == true and .digest == $digest and .mode == $mode and .baselineDigest == $baseline' \
+                "gate/gate-$arch.json" > /dev/null; then
+              echo "::error::Gate result for $arch is missing or does not match $DIGEST ($MODE, baseline ${BASELINE:-none})"
+              exit 1
+            fi
+          done
+          SCANS="$(jq -sc 'map({architecture, grypeVersion, grypeDbBuilt})' gate/gate-amd64.json gate/gate-arm64.json)"
           jq -n \
             --arg verifier "https://github.com/$GITHUB_REPOSITORY/.github/workflows/verify-promote.yml@$GITHUB_REF" \
             --arg time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --arg resource "oci://$REF" \
             --arg policy "https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_SHA/.github/workflows/verify-promote.yml" \
             --arg commit "$GITHUB_SHA" \
+            --arg level "$VULN_LEVEL" \
+            --arg mode "$MODE" \
+            --arg baseline "$BASELINE" \
+            --argjson scans "$SCANS" \
             '{
               verifier: { id: $verifier },
               timeVerified: $time,
@@ -374,9 +503,14 @@ jobs:
                 "UPSTREAM_SIGNATURE_VERIFIED",
                 "UPSTREAM_SBOM_ATTESTATION_VERIFIED",
                 "SANITY_TESTS_PASSED",
-                "NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES"
+                $level
               ],
-              slsaVersion: "1.0"
+              slsaVersion: "1.0",
+              vulnerabilityGate: {
+                mode: $mode,
+                baselineDigest: (if $baseline == "" then null else $baseline end),
+                scans: $scans
+              }
             }' > vsa.json
           cat vsa.json
 
