@@ -82,7 +82,7 @@ images:
     source: registry.access.redhat.com/hi/python:3.15-builder@sha256:7a7c1f82fdb3bbf2fa242e0cc3c90d4c4fea57a7aed2c2f25fa1639a066e9c44
 
   - name: rust
-    source: registry.access.redhat.com/hi/rust:1.99@sha256:3940bcd47612f953ee1af2cea4978074bea4f803b4a7da173efdd751b7532364
+    source: registry.access.redhat.com/hi/rust:1.99@sha256:4129d5678da041814b042751a83cebb08af5a665ff4ee572a4eca56e4282fc81
   - name: rust
     source: registry.access.redhat.com/hi/rust:1.99-builder@sha256:2782d902b6323919c8f1787fed49b02d22d5137c2daf3678ed7166fd2997303a
 
