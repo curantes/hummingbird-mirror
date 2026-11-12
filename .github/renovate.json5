@@ -13,6 +13,11 @@
     "schedule": ["at any time"]
   },
   "osvVulnerabilityAlerts": true,
+  // Every mirror/images.yaml entry gets its own PR (48 entries). The default
+  // limits (10 open PRs, 2 new per hour) would let a few PRs that fail the
+  // mirror checks hold back the refreshes of every other entry.
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
   "customManagers": [
     {
       // Upstream images approved for mirroring (mirror/images.yaml)
@@ -30,16 +35,20 @@
       "pinDigests": true
     },
     {
-      "matchPackageNames": ["/^registry\\.access\\.redhat\\.com/hi//"],
-      "groupName": "redhat-hummingbird-base-images",
-      "commitMessageTopic": "Red Hat Hummingbird base images"
-    },
-    {
       // Each mirror/images.yaml entry is one version stream; only refresh its
       // digest. New streams are added as new entries.
       "matchPackageNames": ["/^registry\\.access\\.redhat\\.com/hi//"],
       "matchUpdateTypes": ["major", "minor", "patch"],
       "enabled": false
+    },
+    {
+      // Entries are not grouped: each digest refresh is its own PR, so an
+      // image that fails the mirror checks doesn't block the others. The
+      // branch name includes the tag so that tags of one repository
+      // (hi/go:1.26, hi/go:1.27-builder) never share a branch.
+      "matchPackageNames": ["/^registry\\.access\\.redhat\\.com/hi//"],
+      "matchUpdateTypes": ["digest"],
+      "branchTopic": "{{{depNameSanitized}}}-{{{currentValue}}}"
     },
     {
       "matchManagers": ["github-actions"],
@@ -52,6 +61,20 @@
       "matchUpdateTypes": ["digest", "pin", "pinDigest", "patch"],
       "automerge": true,
       "platformAutomerge": true
+    },
+    {
+      // The VSA is trusted because verify-promote.yml on main signs it, so
+      // changes to the actions and tools the mirror workflows run need a
+      // human review. After the rule above: later rules win.
+      "matchManagers": ["github-actions"],
+      "automerge": false
+    },
+    {
+      "matchFileNames": [
+        ".github/workflows/mirror.yml",
+        ".github/workflows/verify-promote.yml"
+      ],
+      "automerge": false
     },
     {
       // Renovate ships minor releases every few days. The pinned version only

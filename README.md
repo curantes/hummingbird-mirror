@@ -148,7 +148,7 @@ A refresh is compared with the baseline because upstream rebuilds often still ca
 
 The weekly run reports the findings of approved digests without failing on them. It still fails, and opens a `mirror-alert` issue, when a signature, a test or package detection fails.
 
-Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes digests and never moves an entry to another stream.
+Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes digests and never moves an entry to another stream. Each entry gets its own PR, which merges automatically once the checks pass, so an image that fails doesn't hold back the others. Updates to the actions and tools the mirror workflows use are not merged automatically: the VSA is trusted because `verify-promote.yml` on `main` signs it, so those changes get a review.
 
 ### Why Grype (not Trivy)
 
