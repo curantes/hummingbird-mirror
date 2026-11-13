@@ -43,7 +43,7 @@ images:
   - name: openjdk
     source: registry.access.redhat.com/hi/openjdk:21-runtime@sha256:32ad9d8aca33d36be77d0198bfb2e166f84010e160166d1231e8087857633258
   - name: openjdk
-    source: registry.access.redhat.com/hi/openjdk:21-builder@sha256:c30899bfc6c0d4989e76225db8ac7aca9b86b139a65f542639381c3cac7c9ffa
+    source: registry.access.redhat.com/hi/openjdk:21-builder@sha256:36673ebf48b46414a9d76d84649655319f17b40177d3e138ead7e92c1a948acc
   - name: openjdk
     source: registry.access.redhat.com/hi/openjdk:25@sha256:ed11ec508b162d6cc95bb9b9f36d9373713a72a36fe318e1729391647bf8cb9c
   - name: openjdk
