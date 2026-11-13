@@ -119,7 +119,7 @@ ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
 [`mirror.yml`](.github/workflows/mirror.yml) reads the allowlist and runs [`verify-promote.yml`](.github/workflows/verify-promote.yml) for every entry:
 
-1. **Verify upstream:** the source must be pinned by digest to a multi-arch index (amd64 and arm64). The Red Hat signature and SPDX SBOM attestation must verify against Red Hat release key 3 ([`policy/keys/redhat-release3.pub`](policy/keys/redhat-release3.pub)). The upstream version must belong to the tag's stream (`go:1.26` must contain 1.26.x).
+1. **Verify upstream:** the source must be pinned by digest to a multi-arch index (amd64 and arm64). The Red Hat signature and SPDX SBOM attestation must verify against an upstream key in [`policy/keys/`](policy/keys), today Red Hat release key 3 ([`redhat-release3.pub`](policy/keys/redhat-release3.pub)). The upstream version must belong to the tag's stream (`go:1.26` must contain 1.26.x).
 2. **Test and scan** natively on amd64 and arm64:
    - sanity tests from `tests/<name>/test.sh`
    - a Syft SBOM, with a check that Hummingbird OS and its RPMs are detected
@@ -150,6 +150,17 @@ The weekly run reports the findings of approved digests without failing on them.
 
 Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes digests and never moves an entry to another stream. Each entry gets its own PR, which merges automatically once the checks pass, so an image that fails doesn't hold back the others. Updates to the actions and tools the mirror workflows use are not merged automatically: the VSA is trusted because `verify-promote.yml` on `main` signs it, so those changes get a review.
 
+### Upstream Keys
+
+The pipeline tries every `policy/keys/*.pub` and accepts an image when one of them verifies its signature, and one its SBOM attestation ([`verify-upstream.sh`](.github/scripts/verify-upstream.sh)). That allows a key rotation without a gap. When a new Red Hat release key is announced:
+
+1. Add the new public key as `policy/keys/<name>.pub`. Take it from the Red Hat [product signing keys](https://access.redhat.com/security/team/key) page and check its fingerprint there. Keep the old key: digests that are already mirrored are signed with it.
+2. Add the same key to [`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml): add another attestor and list it next to the existing one in the first validation (`[attestors.redhatRelease3, attestors.<new>]`), so that either key is enough. The `Policy Keys` check fails until the policy and `policy/keys/` contain the same keys.
+3. Open a PR. A change under `policy/keys/` re-checks every entry, and the `Policy` workflow tests the policy in a cluster.
+4. Tell consumers to update their copy of the policy.
+
+Remove the old key, in both places, only when no mirrored digest you still support is signed with it.
+
 ### Why Grype (not Trivy)
 
 Trivy doesn't recognise Hummingbird OS: it detects no OS and no packages, so it always reports zero vulnerabilities. Grype detects the `hummingbird` distro and its RPMs, and it is the scanner upstream recommends.
@@ -172,7 +183,7 @@ gh attestation verify "oci://$IMAGE" --bundle-from-oci \
 
 The VSA lists what was checked in `verifiedLevels`: `UPSTREAM_SIGNATURE_VERIFIED`, `UPSTREAM_SBOM_ATTESTATION_VERIFIED`, `SANITY_TESTS_PASSED`, and either `NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES` (new stream) or `NO_VULNERABILITY_REGRESSION` (refresh). Its `vulnerabilityGate` field records the gate mode, the baseline digest, and the Grype version and database build date of each architecture's scan.
 
-[`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml) is a Kyverno (≥ 1.13) policy that enforces both checks at admission. It requires a VSA with `verificationResult: PASSED` and doesn't look at the levels.
+[`policy/verify-hummingbird-mirror.yaml`](policy/verify-hummingbird-mirror.yaml) is a Kyverno `ImageValidatingPolicy` that enforces both checks at admission. It needs Kyverno 1.20 or later. It requires the Red Hat signature and a VSA with `verificationResult: PASSED`, for containers, init containers and ephemeral containers, and doesn't look at the levels. The [`Policy`](.github/workflows/policy.yml) workflow tests it in a kind cluster: a mirrored image must be admitted and an unsigned artifact under the mirror path rejected.
 
 ## Known Limitations
 
@@ -180,7 +191,6 @@ The VSA lists what was checked in `verifiedLevels`: `UPSTREAM_SIGNATURE_VERIFIED
 - The VSA records our checks as custom `verifiedLevels`. We don't claim an upstream SLSA build level.
 - A mirrored image can have fixable HIGH/CRITICAL vulnerabilities. A refresh only has to be no worse than the digest it replaces, and vulnerabilities disclosed after promotion don't remove an image. Scan the digests you deploy.
 - The VSA means "passed our checks at promotion time". It doesn't expire and isn't withdrawn when new vulnerabilities are disclosed. VSAs issued before the regression gate carry `NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES` and no `vulnerabilityGate` field.
-- The Kyverno policy hasn't been tested in a cluster yet.
 
 ## Running Tests Locally
 

@@ -41,8 +41,11 @@ env:
   SOURCE: ${{ inputs.source }}
   BASELINE: ${{ inputs.baseline }}
   MIRROR_IMAGE: ${{ inputs.mirror }}/${{ inputs.name }}
-  # Red Hat release key 3 (https://security.access.redhat.com/data/63405576.txt)
-  UPSTREAM_KEY: policy/keys/redhat-release3.pub
+  # Upstream keys, e.g. Red Hat release key 3
+  # (https://security.access.redhat.com/data/63405576.txt). Every *.pub in
+  # this directory is tried and one that verifies is enough; see
+  # .github/scripts/verify-upstream.sh and "Upstream Keys" in the README.
+  UPSTREAM_KEYS: policy/keys
   VSA_PREDICATE: https://slsa.dev/verification_summary/v1
   # Pinned so that a scan is reproducible and a scanner update is a
   # reviewed change, not a side effect of an action update.
@@ -115,8 +118,6 @@ jobs:
         uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
 
       - name: Verify Red Hat Signature and SBOM Attestation
-        # Red Hat signs with a long-lived key and does not upload to the public
-        # Rekor log, hence --insecure-ignore-tlog (as documented upstream).
         env:
           REF: ${{ steps.parse.outputs.ref }}
         run: |
@@ -127,10 +128,8 @@ jobs:
             echo "Source must be a multi-arch index with amd64 and arm64 (got: '${ARCHS:-single manifest}')"
             exit 1
           fi
-          echo "Verifying $REF"
-          cosign verify --key "$UPSTREAM_KEY" --insecure-ignore-tlog "$REF" > /dev/null
-          cosign verify-attestation --key "$UPSTREAM_KEY" --insecure-ignore-tlog \
-            --type spdx "$REF" > /dev/null
+          .github/scripts/verify-upstream.sh signature "$REF" "$UPSTREAM_KEYS"
+          .github/scripts/verify-upstream.sh sbom "$REF" "$UPSTREAM_KEYS"
 
       # Guards against a digest that belongs to another stream (e.g. go:1.26
       # pinned to a 1.27.x image).
@@ -434,21 +433,19 @@ jobs:
             echo "Digest changed during copy: $MIRRORED != $DIGEST"
             exit 1
           fi
-          cosign verify --key "$UPSTREAM_KEY" --insecure-ignore-tlog "$MIRROR_IMAGE@$DIGEST" > /dev/null
+          .github/scripts/verify-upstream.sh signature "$MIRROR_IMAGE@$DIGEST" "$UPSTREAM_KEYS"
           # GHCR updates the referrers fallback index read-modify-write and can
           # serve a stale index, occasionally dropping the bundle; repair and retry.
           for attempt in 1 2 3; do
-            if cosign verify-attestation --key "$UPSTREAM_KEY" --insecure-ignore-tlog \
-                --type spdx "$MIRROR_IMAGE@$DIGEST" > /dev/null; then
-              echo "Mirrored copy keeps digest $DIGEST and verifies with the Red Hat key"
+            if .github/scripts/verify-upstream.sh sbom "$MIRROR_IMAGE@$DIGEST" "$UPSTREAM_KEYS" 2> /dev/null; then
+              echo "Mirrored copy keeps digest $DIGEST and verifies with an upstream key"
               exit 0
             fi
             echo "::warning::SBOM attestation missing on mirror (attempt $attempt); repairing referrers"
             sleep $((attempt * 10))
             regctl image copy --referrers --force-recursive "$REF" "$MIRROR_IMAGE@$DIGEST" || true
           done
-          cosign verify-attestation --key "$UPSTREAM_KEY" --insecure-ignore-tlog \
-            --type spdx "$MIRROR_IMAGE@$DIGEST" > /dev/null
+          .github/scripts/verify-upstream.sh sbom "$MIRROR_IMAGE@$DIGEST" "$UPSTREAM_KEYS"
 
       - name: Check for Existing Approval
         id: approval

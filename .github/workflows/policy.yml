@@ -1,0 +1,119 @@
+name: Policy
+
+# Tests policy/verify-hummingbird-mirror.yaml, the Kyverno policy consumers
+# use to admit only approved images from the mirror, in a kind cluster.
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'policy/**'
+      - '.github/scripts/check-policy-keys.sh'
+      - '.github/scripts/policy-admission-test.sh'
+      - '.github/workflows/policy.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'policy/**'
+      - '.github/scripts/check-policy-keys.sh'
+      - '.github/scripts/policy-admission-test.sh'
+      - '.github/workflows/policy.yml'
+  # The mirrored images, their attestations and the registry change without
+  # a commit here, so check weekly that the policy still admits them.
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  # Must be at least the policy's `policies.kyverno.io/minversion`.
+  # renovate: datasource=github-releases depName=kyverno/kyverno
+  KYVERNO_VERSION: v1.20.0
+  POLICY_FILE: policy/verify-hummingbird-mirror.yaml
+  POLICY_RESOURCE: imagevalidatingpolicy/verify-hummingbird-mirror
+  # renovate: datasource=github-releases depName=kubernetes-sigs/kind
+  KIND_VERSION: v0.33.0
+
+jobs:
+  keys:
+    name: Policy Keys
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Compare Policy Keys with policy/keys
+        run: .github/scripts/check-policy-keys.sh "$POLICY_FILE"
+
+  admission:
+    name: Policy Admission (Kyverno)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create kind Cluster
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            -o "$RUNNER_TEMP/kind" "https://github.com/kubernetes-sigs/kind/releases/download/$KIND_VERSION/kind-linux-amd64"
+          chmod +x "$RUNNER_TEMP/kind"
+          "$RUNNER_TEMP/kind" version
+          "$RUNNER_TEMP/kind" create cluster --name policy-test --wait 180s
+          # Pods can only be created once the default service account exists.
+          for _ in $(seq 1 30); do
+            kubectl get serviceaccount default > /dev/null 2>&1 && break
+            sleep 2
+          done
+          kubectl get serviceaccount default
+
+      - name: Install Kyverno
+        run: |
+          MIN="$(yq '.metadata.annotations."policies.kyverno.io/minversion"' "$POLICY_FILE")"
+          if [ "$(printf '%s\n' "$MIN" "${KYVERNO_VERSION#v}" | sort -V | head -n 1)" != "$MIN" ]; then
+            echo "Kyverno $KYVERNO_VERSION is older than the policy's minimum version $MIN"
+            exit 1
+          fi
+          # `create`, not `apply`: the CRDs exceed the annotation size limit.
+          kubectl create -f "https://github.com/kyverno/kyverno/releases/download/$KYVERNO_VERSION/install.yaml"
+          kubectl -n kyverno rollout status deployment/kyverno-admission-controller --timeout=300s
+
+      - name: Apply the Policy
+        run: |
+          # The deployment is available before Kyverno has issued its webhook
+          # certificate, so the first attempts can fail with "connection
+          # refused" from the policy webhook.
+          for attempt in $(seq 1 12); do
+            if kubectl apply -f "$POLICY_FILE"; then
+              break
+            fi
+            if [ "$attempt" -eq 12 ]; then
+              echo "The policy could not be applied after $attempt attempts"
+              exit 1
+            fi
+            echo "Attempt $attempt failed; retrying in 10s"
+            sleep 10
+          done
+          kubectl wait --for='jsonpath={.status.conditionStatus.ready}=true' --timeout=120s "$POLICY_RESOURCE"
+
+      - name: Test Admission
+        run: .github/scripts/policy-admission-test.sh
+
+      - name: Show Kyverno Logs
+        if: failure()
+        run: |
+          kubectl get "$POLICY_RESOURCE" -o yaml || true
+          kubectl -n kyverno get pods -o wide || true
+          # Without Kyverno's trace and debug lines
+          kubectl -n kyverno logs deployment/kyverno-admission-controller --tail=2000 \
+            | grep -v -e 'TRC' -e 'DBG' | tail -n 80 || true

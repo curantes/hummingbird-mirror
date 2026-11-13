@@ -182,6 +182,9 @@ jobs:
       - name: Test the Vulnerability Gate
         run: .github/scripts/tests/vuln-gate-test.sh
 
+      - name: Test the Upstream Key Verification
+        run: .github/scripts/tests/verify-upstream-test.sh
+
   verify-promote:
     name: ${{ matrix.image.name }}:${{ matrix.image.tag }}
     needs: [plan, gate-tests]
