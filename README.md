@@ -1,83 +1,113 @@
 # Hummingbird Mirror
 
 [![Mirror](https://github.com/curantes/hummingbird-mirror/actions/workflows/mirror.yml/badge.svg?branch=main)](https://github.com/curantes/hummingbird-mirror/actions/workflows/mirror.yml?query=branch%3Amain)
+[![Policy](https://github.com/curantes/hummingbird-mirror/actions/workflows/policy.yml/badge.svg?branch=main)](https://github.com/curantes/hummingbird-mirror/actions/workflows/policy.yml?query=branch%3Amain)
+[![Lint](https://github.com/curantes/hummingbird-mirror/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/curantes/hummingbird-mirror/actions/workflows/lint.yml?query=branch%3Amain)
+[![Mirror alerts](https://img.shields.io/github/issues/curantes/hummingbird-mirror/mirror-alert?label=mirror%20alerts)](https://github.com/curantes/hummingbird-mirror/issues?q=is%3Aissue+is%3Aopen+label%3Amirror-alert)
+[![Mirrored tags](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcurantes%2Fhummingbird-mirror%2Fmain%2Fmirror%2Fimages.yaml&query=%24.images.length&label=mirrored%20tags&color=blue)](mirror/images.yaml)
+[![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen?logo=renovatebot)](https://github.com/curantes/hummingbird-mirror/issues/11)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 An independent mirror of [Red Hat® Hardened Images](https://gitlab.com/redhat/hummingbird/containers) (Project Hummingbird, `registry.access.redhat.com/hi/*`). **This project has no affiliation with Red Hat, LLC and is not endorsed or supported by Red Hat.** The checks described below are our own.
 
 Images are **not rebuilt**. This pipeline verifies, tests and scans each approved upstream digest, then copies it to the mirror unchanged: same digest, with the Red Hat signatures and attestations. We then attach our own signed approval, a SLSA verification summary attestation (VSA). The VSA records that our checks passed; it is not a statement by Red Hat.
 
+## At a Glance
+
+What you get from the mirror:
+
+- **Unchanged images.** The mirrored digest is identical to the upstream digest. Nothing is rebuilt or repackaged.
+- **Verified origin.** The Red Hat signature and SBOM attestation are verified before the copy and again on the mirror, and they are copied along with the image.
+- **Tested on both architectures.** Sanity tests and a Grype scan run natively on amd64 and arm64.
+- **A vulnerability gate.** A new stream must have no fixable HIGH or CRITICAL findings, and a refresh must not add any. See [Vulnerability Gate](#vulnerability-gate) and [Known Limitations](#known-limitations).
+- **A signed approval.** Every promoted digest carries our VSA, signed without a long-lived key through the identity of the promotion workflow. Tags move only after it exists. All approvals are listed under [Attestations](https://github.com/curantes/hummingbird-mirror/attestations).
+- **Enforcement at admission.** A Kyverno policy, tested in a cluster, admits only images that have both. See [Verifying Images](#verifying-images).
+
+How the pipeline itself is protected:
+
+- Actions are pinned by commit SHA and tools by version. Renovate updates them after a 3-day minimum release age, and those updates are not merged automatically.
+- Workflows start without token permissions, and each job gets only what it needs. actionlint, ShellCheck and zizmor check every PR.
+- `main` changes only through PRs with required checks.
+- Every approved digest is re-verified and rescanned weekly. A failure opens a [`mirror-alert`](https://github.com/curantes/hummingbird-mirror/issues?q=is%3Aissue+label%3Amirror-alert) issue.
+- Security problems can be reported privately; see [SECURITY.md](SECURITY.md).
+
 ## Available Images
 
 All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes/hummingbird-mirror/`. They are grouped by the categories of the Red Hat [Hummingbird catalog](https://images.redhat.com/) and sorted alphabetically within each group.
+
+```bash
+docker pull ghcr.io/curantes/hummingbird-mirror/go:1.27
+```
+
+Each image name links to its package page, which lists every tag and digest on the mirror. All packages are listed [here](https://github.com/curantes?tab=packages&repo_name=hummingbird-mirror).
 
 ### Operating System
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| `core-runtime` | `latest` | glibc runtime with bash | 65532 |
-| `static` | `latest` | CA certificates, tzdata; no shell, no libc | 65532 |
+| [`core-runtime`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcore-runtime) | `latest` | glibc runtime with bash | 65532 |
+| [`static`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fstatic) | `latest` | CA certificates, tzdata; no shell, no libc | 65532 |
 
 ### Programming Languages & Runtimes
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| `go` | `1.26`, `1.27` | Go toolchain, gcc, git, make | root |
-| `go` | `1.26-builder`, `1.27-builder` | the above plus dnf | root |
-| `nodejs` | `24`, `26` | Node.js with npm and npx; ships bash (`docker-entrypoint.sh`) | 65532 |
-| `nodejs` | `24-builder`, `26-builder` | the above plus dnf | 65532 |
-| `openjdk` | `21`, `25` | JDK (javac, jshell) | 65532 |
-| `openjdk` | `21-runtime`, `25-runtime` | headless JRE; distroless, no shell | 65532 |
-| `openjdk` | `21-builder`, `25-builder` | JDK plus bash and dnf | 65532 |
-| `php` | `8.5` | PHP CLI with common extensions; ships bash | root |
-| `php` | `8.5-builder` | the above plus Composer and dnf | root |
-| `php` | `8.5-fpm` | PHP-FPM on port 9000; distroless, no shell or CLI | 65532 |
-| `php` | `8.5-fpm-builder` | PHP-FPM plus PHP CLI, Composer, bash and dnf | 65532 |
-| `python` | `3.11`–`3.15` | CPython with pip and venv; distroless, no shell | 65532 |
-| `python` | `3.11-builder`–`3.15-builder` | the above plus bash and dnf | 65532 |
-| `rust` | `1.99` | Rust toolchain (cargo, clippy, rustfmt), gcc, git, make | root |
-| `rust` | `1.99-builder` | the above plus dnf | root |
+| [`go`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgo) | `1.26`, `1.27` | Go toolchain, gcc, git, make | root |
+| [`go`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgo) | `1.26-builder`, `1.27-builder` | the above plus dnf | root |
+| [`nodejs`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnodejs) | `24`, `26` | Node.js with npm and npx; ships bash (`docker-entrypoint.sh`) | 65532 |
+| [`nodejs`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnodejs) | `24-builder`, `26-builder` | the above plus dnf | 65532 |
+| [`openjdk`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fopenjdk) | `21`, `25` | JDK (javac, jshell) | 65532 |
+| [`openjdk`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fopenjdk) | `21-runtime`, `25-runtime` | headless JRE; distroless, no shell | 65532 |
+| [`openjdk`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fopenjdk) | `21-builder`, `25-builder` | JDK plus bash and dnf | 65532 |
+| [`php`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fphp) | `8.5` | PHP CLI with common extensions; ships bash | root |
+| [`php`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fphp) | `8.5-builder` | the above plus Composer and dnf | root |
+| [`php`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fphp) | `8.5-fpm` | PHP-FPM on port 9000; distroless, no shell or CLI | 65532 |
+| [`php`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fphp) | `8.5-fpm-builder` | PHP-FPM plus PHP CLI, Composer, bash and dnf | 65532 |
+| [`python`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fpython) | `3.11`–`3.15` | CPython with pip and venv; distroless, no shell | 65532 |
+| [`python`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fpython) | `3.11-builder`–`3.15-builder` | the above plus bash and dnf | 65532 |
+| [`rust`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Frust) | `1.99` | Rust toolchain (cargo, clippy, rustfmt), gcc, git, make | root |
+| [`rust`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Frust) | `1.99-builder` | the above plus dnf | root |
 
 ### Database & Data Management
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| `etcd` | `3.7` | etcd, etcdctl and etcdutl; client port 2379, peer port 2380, data in `/var/lib/etcd`; distroless, no shell | 65532 |
-| `etcd` | `3.7-builder` | the above plus bash, curl and dnf | 65532 |
-| `valkey` | `9.0` | Valkey server and CLI on port 6379, data in `/data`; runs without a configuration, so protected mode refuses remote clients until you set a password (`--requirepass`) or mount one; ships bash | 65532 |
-| `valkey` | `9.0-builder` | the above plus curl and dnf | 65532 |
+| [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3.7` | etcd, etcdctl and etcdutl; client port 2379, peer port 2380, data in `/var/lib/etcd`; distroless, no shell | 65532 |
+| [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3.7-builder` | the above plus bash, curl and dnf | 65532 |
+| [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `9.0` | Valkey server and CLI on port 6379, data in `/data`; runs without a configuration, so protected mode refuses remote clients until you set a password (`--requirepass`) or mount one; ships bash | 65532 |
+| [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `9.0-builder` | the above plus curl and dnf | 65532 |
 
 ### Developer Tools
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| `curl` | `8.23` | curl with HTTP/2 and OpenSSL, and the system CA trust store; the entrypoint is `curl`; distroless, no shell | 65532 |
-| `curl` | `8.23-builder` | the above plus bash and dnf | 65532 |
-| `git` | `2.56` | git with HTTP(S) and SSH remotes; the entrypoint is `git`, working directory `/git`; ships bash, less and the ssh client; the image has no passwd entry for 65532, so for SSH remotes mount an `/etc/passwd` with one (Podman adds it automatically, Docker and Kubernetes don't) | 65532 |
-| `git` | `2.56-builder` | the above plus curl and dnf | 65532 |
+| [`curl`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcurl) | `8.23` | curl with HTTP/2 and OpenSSL, and the system CA trust store; the entrypoint is `curl`; distroless, no shell | 65532 |
+| [`curl`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcurl) | `8.23-builder` | the above plus bash and dnf | 65532 |
+| [`git`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgit) | `2.56` | git with HTTP(S) and SSH remotes; the entrypoint is `git`, working directory `/git`; ships bash, less and the ssh client; the image has no passwd entry for 65532, so for SSH remotes mount an `/etc/passwd` with one (Podman adds it automatically, Docker and Kubernetes don't) | 65532 |
+| [`git`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgit) | `2.56-builder` | the above plus curl and dnf | 65532 |
 
 ### Messaging
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| `rabbitmq` | `4.3` | RabbitMQ broker and CLI tools; AMQP on 5672, data in `/var/lib/rabbitmq` (keep the hostname stable, it names the node and its data directory); `guest` only works from inside the container; plugins such as `rabbitmq_management` ship but are disabled, and `/etc/rabbitmq` isn't writable, so mount an `enabled_plugins` file to enable them; ships bash | 65532 |
-| `rabbitmq` | `4.3-builder` | the above plus curl and dnf | 65532 |
+| [`rabbitmq`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Frabbitmq) | `4.3` | RabbitMQ broker and CLI tools; AMQP on 5672, data in `/var/lib/rabbitmq` (keep the hostname stable, it names the node and its data directory); `guest` only works from inside the container; plugins such as `rabbitmq_management` ship but are disabled, and `/etc/rabbitmq` isn't writable, so mount an `enabled_plugins` file to enable them; ships bash | 65532 |
+| [`rabbitmq`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Frabbitmq) | `4.3-builder` | the above plus curl and dnf | 65532 |
 
 ### Networking
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| `coredns` | `1.15` | CoreDNS; without a Corefile, answers `whoami` on port 53; pass `-conf` to use a mounted Corefile; the binary has no file capabilities, so port 53 needs unprivileged low ports (Docker's default; with Podman add `--sysctl net.ipv4.ip_unprivileged_port_start=0`); distroless, no shell | 65532 |
-| `coredns` | `1.15-builder` | the above plus bash, curl and dnf | 65532 |
+| [`coredns`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcoredns) | `1.15` | CoreDNS; without a Corefile, answers `whoami` on port 53; pass `-conf` to use a mounted Corefile; the binary has no file capabilities, so port 53 needs unprivileged low ports (Docker's default; with Podman add `--sysctl net.ipv4.ip_unprivileged_port_start=0`); distroless, no shell | 65532 |
+| [`coredns`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcoredns) | `1.15-builder` | the above plus bash, curl and dnf | 65532 |
 
 ### Web Services
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| `haproxy` | `3.0` | HAProxy (LTS); ships no configuration, mount one at `/usr/local/etc/haproxy/haproxy.cfg`; distroless, no shell | `haproxy` (999) |
-| `haproxy` | `3.0-builder` | the above plus bash, curl and dnf | `haproxy` (999) |
-| `nginx` | `1.30` | nginx serving a default page on port 8080; configuration in `/etc/nginx/conf.d/`; distroless, no shell | 65532 |
-| `nginx` | `1.30-builder` | the above plus bash, curl and dnf | 65532 |
+| [`haproxy`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fhaproxy) | `3.0` | HAProxy (LTS); ships no configuration, mount one at `/usr/local/etc/haproxy/haproxy.cfg`; distroless, no shell | `haproxy` (999) |
+| [`haproxy`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fhaproxy) | `3.0-builder` | the above plus bash, curl and dnf | `haproxy` (999) |
+| [`nginx`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnginx) | `1.30` | nginx serving a default page on port 8080; configuration in `/etc/nginx/conf.d/`; distroless, no shell | 65532 |
+| [`nginx`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnginx) | `1.30-builder` | the above plus bash, curl and dnf | 65532 |
 
 The approved set is defined in [`mirror/images.yaml`](mirror/images.yaml).
 
