@@ -38,7 +38,7 @@ env:
 jobs:
   keys:
     name: Policy Keys
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -53,7 +53,7 @@ jobs:
 
   admission:
     name: Policy Admission (Kyverno)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: read
