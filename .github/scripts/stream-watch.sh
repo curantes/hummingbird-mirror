@@ -9,24 +9,37 @@
 #   plan   print what to add and what to retire, as JSON
 #   apply  print the allowlist with entries added, or their digests replaced
 #
-# A stream is the part of a tag before the first "-" (1.27 in 1.27-builder),
-# the rest is the variant. For each mirrored image, `plan` looks at the
-# upstream tags that are shaped like its mirrored streams (1.27 has two
-# components, 24 has one; "latest" has no shape and gets no new streams):
+# The catalog decides what a stream is: every upstream tag names the stream
+# it belongs to. One stream holds every tag that moves with it, so the tags
+# 1, 1.100, 1.100.0 and latest of rust are all in the stream "1", and the
+# step from 1.99 to 1.100 is a refresh of the tag 1, not a new stream. A
+# stream is not always named after a tag ("mainline", or "3.6" while it
+# holds 3.7). The tag to mirror for a stream is its floating tag. For a
+# stream named after a version that is the tag with that name (1.27). For
+# any other stream it is the shortest version tag in it that is not a full
+# version (coredns:1 in the stream "latest"), which keeps the version in
+# the tag; the tag named like the stream, or latest, is accepted too. The
+# part of a tag after the first "-" is the variant (builder in
+# 1.27-builder).
 #
-#   add     an upstream stream that is not deprecated or superseded
-#           upstream and not past its end of life, and that is not mirrored
-#           yet, or not with every variant the image is mirrored with
-#           (upstream can publish a variant later). It gets one entry per
-#           missing variant that is available.
+#   add     a stream with current tags upstream (not deprecated, not
+#           superseded) that is not past its end of life, and of which
+#           nothing is mirrored: one entry per mirrored variant, on the
+#           floating tag. Also the variants that a mirrored stream lacks
+#           (upstream can publish a variant later).
 #   retire  a mirrored tag that is gone, deprecated or superseded upstream,
-#           or whose stream is past its end of life.
+#           or whose version is past its end of life. `follow` names the
+#           tag its stream continues as, if it does: move the entry there.
+#   narrow  a mirrored tag that is current but is not the floating tag of
+#           its stream (1.15 in a stream that will move to 1.16), with the
+#           tag to `follow`. It is superseded at the next upstream release.
 #   skipped an unmirrored upstream stream that is past its end of life.
 #   errors  images whose catalog data is missing or unreadable. They are
 #           left out, so a failed download never reads as "gone upstream".
 #
 # Upstream data: <catalog>/<name>.json is the catalog API's tag list for an
-# image (/v1/images/<name>/tags). <eol>/<name>.json is the endoflife.date
+# image (/v1/images/<name>/tags), where every tag has `stream`, `variant`
+# and `canonical` (its full version). <eol>/<name>.json is the endoflife.date
 # product (/api/v1/products/<name>/); it is optional, and images without
 # one are judged by the catalog alone.
 #
@@ -99,33 +112,53 @@ case "$COMMAND" in
     load "$EOL" <<< "$NAMES" > "$WORK/eol.json"
     jq -n --argjson mirrored "$MIRRORED" --slurpfile catalogs "$WORK/catalog.json" --slurpfile eols "$WORK/eol.json" '
       $catalogs[0] as $catalog | $eols[0] as $eol |
-      def stream: split("-")[0];
-      def variant: split("-")[1:] | join("-");
-      def shape: if test("^[0-9]+(\\.[0-9]+)*$") then (split(".") | length) else null end;
+      def prefix: split("-")[0];
+      def suffix: split("-")[1:] | join("-");
+      def with($v): . + (if $v == "" then "" else "-" + $v end);
+      def numeric: test("^[0-9]+(\\.[0-9]+)*$");
       def by_version: sort_by(.stream | split(".") | map(tonumber? // 0));
-      def usable: . != null and (.digest // "" | test("^sha256:[a-f0-9]{64}$"))
-        and (.deprecated != true) and (.superseded != true)
+      def live: . != null and (.deprecated != true) and (.superseded != true);
+      def usable: live and (.digest // "" | test("^sha256:[a-f0-9]{64}$"))
         and ((.architectures // []) | (index("amd64") != null and index("arm64") != null));
 
       [ $mirrored | group_by(.name)[] | . as $entries | $entries[0].name as $name
         | ($catalog[$name].tags) as $tags
-        | if ($tags | type) != "array" then {error: $name} else
+        | if ($tags | type) != "array" or (any($tags[]; (.stream | type) == "string") | not) then {error: $name} else
             ($tags | map({key: .name, value: .}) | from_entries) as $upstream
             | ([$eol[$name].result.releases[]? | select(.isEol == true) | {key: .name, value: (.eolFrom // "")}]
                 | from_entries) as $ended
-            | ($entries | map(.tag | stream) | unique) as $streams
-            | ($entries | map(.tag | variant) | unique) as $variants
+            | ($entries | map(. + {stream: $upstream[.tag].stream})) as $mine
+            | ($entries | map(.tag | suffix) | unique) as $variants
             | ($entries | map(.tag)) as $have
-            | ($streams | map(shape) | map(select(. != null)) | unique) as $shapes
+            | ($tags | map(select(.variant == "default" and live and (.stream | type) == "string"))) as $current
             | def ended($s): if $ended | has($s) then
                   "end of life" + (if $ended[$s] != "" then " since " + $ended[$s] else "" end) + " (endoflife.date)"
                 else null end;
+              # The tags that float with a stream, without a variant, the
+              # preferred one first. The shortest version tag of a stream
+              # that is named after a version (1 in go 1.27) is left out:
+              # it moves on to the next stream.
+              def floats($s): ($current | map(select(.stream == $s))) as $in
+                | any($in[]; .name == $s) as $named
+                | if $named and ($s | numeric) then [$s] else
+                    [ ([$in[] | select(.name != .canonical) | .name | select(numeric)]
+                        | sort_by(split(".") | length) | first // empty),
+                      (if $named then $s else $in[] | .name | select(. == "latest") end) ]
+                  end;
+              def floating($s): floats($s) | first;
+              # The tag an entry should be on, if that is another one
+              def follow: . as $e
+                | (if $e.stream == null or (floats($e.stream) | index($e.tag | prefix) != null) then null
+                   else floating($e.stream) end) as $f
+                | if $f == null then null else ($f | with($e.tag | suffix)) end
+                | if . != null and . != $e.tag and ($upstream[.] | usable) then . else null end;
               {
-                add: [ $tags[] | select(.variant == "default" and (.deprecated != true) and (.superseded != true))
-                  | .name | select((shape as $s | $s != null and ($shapes | index($s) != null)))
-                  | . as $s
-                  | select(ended($s) == null)
-                  | [ $variants[] | ($s + (if . == "" then "" else "-" + . end)) as $tag
+                add: [ $current | map(.stream) | unique[] | . as $s
+                  | [$mine[] | select(.stream == $s)] as $in
+                  | (if ($in | length) > 0 then $in | map(.tag | select(suffix == ""))
+                     else [floating($s) // empty] end)[] as $base
+                  | select(ended($base | prefix) == null)
+                  | [ $variants[] as $v | ($base | with($v)) as $tag
                       | select($have | index($tag) | not)
                       | {tag: $tag, upstream: $upstream[$tag]} ] as $wanted
                   | {
@@ -136,22 +169,29 @@ case "$COMMAND" in
                       unavailable: [ $wanted[] | select(.upstream | usable | not) | .tag ]
                     }
                   | select(.entries | length > 0) ],
-                skipped: [ $tags[] | select(.variant == "default" and (.deprecated != true) and (.superseded != true))
-                  | .name | select((shape as $s | $s != null and ($shapes | index($s) != null)))
-                  | select(. as $s | $streams | index($s) | not) | . as $s
-                  | select(ended($s) != null) | {name: $name, stream: $s, reason: ended($s)} ],
-                retire: [ $entries[] | . as $e | $upstream[$e.tag] as $u
+                skipped: [ $current | map(.stream) | unique[] | . as $s
+                  | select(any($mine[]; .stream == $s) | not)
+                  | (floating($s) // empty) | ended(prefix) as $reason
+                  | select($reason != null) | {name: $name, stream: $s, reason: $reason} ],
+                retire: [ $mine[] | . as $e | $upstream[$e.tag] as $u
+                  | (if $u != null and $u.superseded == true then $e | follow else null end) as $follow
                   | [ (if $u == null then "no longer in the upstream catalog" else empty end),
                       (if $u != null and $u.deprecated == true then "deprecated upstream" else empty end),
                       (if $u != null and $u.superseded == true then "superseded upstream" else empty end),
-                      (ended($e.tag | stream) // empty) ] as $reasons
+                      (if $follow != null then "its stream \($e.stream) continues as \($follow)" else empty end),
+                      (ended($e.tag | prefix) // empty) ] as $reasons
                   | select($reasons | length > 0)
-                  | {name: $name, tag: $e.tag, stream: ($e.tag | stream), reason: ($reasons | join(", "))} ]
+                  | {name: $name, tag: $e.tag, stream: ($e.stream // ($e.tag | prefix)),
+                     reason: ($reasons | join(", ")), follow: $follow} ],
+                narrow: [ $mine[] | . as $e | select($upstream[$e.tag] | live) | ($e | follow) as $follow
+                  | select($follow != null)
+                  | {name: $name, tag: $e.tag, stream: $e.stream, follow: $follow} ]
               }
           end ]
       | {
           add: (map(.add // []) | add // [] | by_version | sort_by(.name)),
           retire: (map(.retire // []) | add // [] | sort_by(.name)),
+          narrow: (map(.narrow // []) | add // [] | sort_by(.name)),
           skipped: (map(.skipped // []) | add // [] | by_version | sort_by(.name)),
           errors: map(.error // empty)
         }'
