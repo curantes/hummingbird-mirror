@@ -65,8 +65,8 @@ Each image name links to its package page, which lists every tag and digest on t
 | [`php`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fphp) | `8.5-fpm-builder` | PHP-FPM plus PHP CLI, Composer, bash and dnf | 65532 |
 | [`python`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fpython) | `3.11`–`3.15` | CPython with pip and venv; distroless, no shell | 65532 |
 | [`python`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fpython) | `3.11-builder`–`3.15-builder` | the above plus bash and dnf | 65532 |
-| [`rust`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Frust) | `1.99` | Rust toolchain (cargo, clippy, rustfmt), gcc, git, make | root |
-| [`rust`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Frust) | `1.99-builder` | the above plus dnf | root |
+| [`rust`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Frust) | `1` | Rust toolchain (cargo, clippy, rustfmt), gcc, git, make | root |
+| [`rust`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Frust) | `1-builder` | the above plus dnf | root |
 
 ### Database & Data Management
 
@@ -81,10 +81,10 @@ Each image name links to its package page, which lists every tag and digest on t
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| [`curl`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcurl) | `8.23` | curl with HTTP/2 and OpenSSL, and the system CA trust store; the entrypoint is `curl`; distroless, no shell | 65532 |
-| [`curl`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcurl) | `8.23-builder` | the above plus bash and dnf | 65532 |
-| [`git`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgit) | `2.56` | git with HTTP(S) and SSH remotes; the entrypoint is `git`, working directory `/git`; ships bash, less and the ssh client; the image has no passwd entry for 65532, so for SSH remotes mount an `/etc/passwd` with one (Podman adds it automatically, Docker and Kubernetes don't) | 65532 |
-| [`git`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgit) | `2.56-builder` | the above plus curl and dnf | 65532 |
+| [`curl`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcurl) | `8` | curl with HTTP/2 and OpenSSL, and the system CA trust store; the entrypoint is `curl`; distroless, no shell | 65532 |
+| [`curl`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcurl) | `8-builder` | the above plus bash and dnf | 65532 |
+| [`git`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgit) | `2` | git with HTTP(S) and SSH remotes; the entrypoint is `git`, working directory `/git`; ships bash, less and the ssh client; the image has no passwd entry for 65532, so for SSH remotes mount an `/etc/passwd` with one (Podman adds it automatically, Docker and Kubernetes don't) | 65532 |
+| [`git`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgit) | `2-builder` | the above plus curl and dnf | 65532 |
 
 ### Messaging
 
@@ -115,7 +115,7 @@ The approved set is defined in [`mirror/images.yaml`](mirror/images.yaml).
 
 ### Tagging Convention
 
-- `<stream>[-variant]` (e.g. `1.26`, `21-runtime`, `latest`): moves to each newly approved digest.
+- `<stream>[-variant]` (e.g. `1.26`, `21-runtime`, `1-builder`, `latest`): moves to each newly approved digest. The streams are the ones of the Red Hat catalog, so how much a tag moves depends on the image: `go:1.27` stays on Go 1.27.x, while `rust:1` moves from Rust 1.99 to 1.100, because the catalog has one stream per Go minor version and a single Rust stream.
 - `<version>[-variant]` (e.g. `1.26.10`, `21.0.12-runtime`): the upstream version. It can move when Red Hat rebuilds the same version.
 - `<version or stream>[-variant]-<UTC timestamp>` (e.g. `1.26.10-20261024T213500Z`): unique per approval and never overwritten.
 
