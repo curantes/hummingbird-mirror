@@ -154,7 +154,7 @@ Every run that checks entries ends with a `Mirror Report` job. Its summary has o
 
 Each job uploads a small JSON report ([`job-report.sh`](.github/scripts/job-report.sh)), and [`mirror-report.sh`](.github/scripts/mirror-report.sh) renders them. The report is informational and separate from the required `Mirror Result` check, and the promotion never reads it.
 
-Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes digests and never moves an entry to another stream. Each entry gets its own PR, which merges automatically once the checks pass, so an image that fails doesn't hold back the others. Updates to the actions and tools the mirror workflows use are not merged automatically: the VSA is trusted because `verify-promote.yml` on `main` signs it, so those changes get a review.
+Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes digests and never moves an entry to another stream. Each entry gets its own PR, which merges automatically once the checks pass, so an image that fails doesn't hold back the others. Updates to the actions and tools the workflows use arrive as one PR a week and are not merged automatically: the VSA is trusted because `verify-promote.yml` on `main` signs it, so those changes get a review.
 
 ### Upstream Keys
 
