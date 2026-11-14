@@ -73,7 +73,7 @@ images:
   - name: python
     source: registry.access.redhat.com/hi/python:3.13-builder@sha256:4067d35c220a1090c135b32066a3d8e0ee43321375f89ce05670f59f6ebff834
   - name: python
-    source: registry.access.redhat.com/hi/python:3.14@sha256:59e4dfed0956348b4157a36b4444e379d068e767102a63c4264d04a8d67f6918
+    source: registry.access.redhat.com/hi/python:3.14@sha256:1ac4921724237d985a35cc23bbcd779fd5b984089e039182bf8e22cd108490d6
   - name: python
     source: registry.access.redhat.com/hi/python:3.14-builder@sha256:4786c5d9367b270bc62fec7890d06fa1463ec03e46993123d1b9946f2f9b46ac
   - name: python
