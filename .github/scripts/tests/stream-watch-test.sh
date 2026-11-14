@@ -88,6 +88,9 @@ images:
   - name: etcd
     source: $REG/etcd:3@$(digest 37)
 
+  - name: coredns
+    source: $REG/coredns:1@$(digest 115)
+
   # --- Operating System ---
   - name: static
     source: $REG/static:latest@$(digest 1)
@@ -156,6 +159,12 @@ jq -n '{result: {releases: [{name: "26", isEol: false}, {name: "22", isEol: true
   tag 3.6 3.7 default 37
   tag 3.6 latest default 37
 } | catalog etcd
+# coredns: the stream is called latest; the entry follows it as 1
+{
+  tag latest latest default 115
+  tag latest 1 default 115
+  tag latest 1.15 default 115
+} | catalog coredns
 tag latest latest default 1 | catalog static
 tag 2.0 2.0 default 30 | catalog gone
 echo 'not json' > "$WORK/catalog/offline.json"
@@ -166,7 +175,7 @@ jq -n '{result: {releases: [{name: "1.0", isEol: true, eolFrom: null}]}}' > "$WO
 
 # --- names ---
 "$WATCH" names --images "$WORK/images.yaml" > "$WORK/names"
-check "names lists every image once" test "$(tr '\n' ' ' < "$WORK/names")" = "etcd go gone nginx nodejs offline rust static unnamed "
+check "names lists every image once" test "$(tr '\n' ' ' < "$WORK/names")" = "coredns etcd go gone nginx nodejs offline rust static unnamed "
 
 # --- plan ---
 "$WATCH" plan --images "$WORK/images.yaml" --catalog "$WORK/catalog" --eol "$WORK/eol" > "$WORK/plan.json"
@@ -198,6 +207,8 @@ check "a stream with a full version only is not proposed" plan_has \
   '[.add[], .skipped[] | select(.name == "nginx")] == []'
 check "an entry on the floating tag of a renamed stream is left alone" plan_has \
   '[.add[], .retire[], .narrow[], .skipped[] | select(.name == "etcd")] == []'
+check "a version tag that floats with a stream called latest is left alone" plan_has \
+  '[.add[], .retire[], .narrow[], .skipped[] | select(.name == "coredns")] == []'
 check "an image on latest gets no new streams and is not retired" plan_has \
   '([.add[], .retire[] | select(.name == "static")] | length) == 0'
 check "a tag that is gone upstream and past its end of life names both reasons" plan_has \
@@ -270,6 +281,7 @@ cat > "$WORK/README.md" <<'EOF'
 | `rust` | `1.99`, `1.99-builder` | Rust | root |
 | `nginx` | `1.30` | | |
 | `etcd` | `3` | | |
+| `coredns` | `1` | | |
 | `static` | `latest` | no shell | 65532 |
 | `gone` | `1.0` | | |
 | `offline` | `2.0` | | |

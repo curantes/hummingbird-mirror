@@ -14,10 +14,13 @@
 # 1, 1.100, 1.100.0 and latest of rust are all in the stream "1", and the
 # step from 1.99 to 1.100 is a refresh of the tag 1, not a new stream. A
 # stream is not always named after a tag ("mainline", or "3.6" while it
-# holds 3.7). The tag to mirror for a stream is its floating tag: the tag
-# named like the stream, else the shortest version tag in it that is not a
-# full version, else latest. The part of a tag after the first "-" is the
-# variant (builder in 1.27-builder).
+# holds 3.7). The tag to mirror for a stream is its floating tag. For a
+# stream named after a version that is the tag with that name (1.27). For
+# any other stream it is the shortest version tag in it that is not a full
+# version (coredns:1 in the stream "latest"), which keeps the version in
+# the tag; the tag named like the stream, or latest, is accepted too. The
+# part of a tag after the first "-" is the variant (builder in
+# 1.27-builder).
 #
 #   add     a stream with current tags upstream (not deprecated, not
 #           superseded) that is not past its end of life, and of which
@@ -131,16 +134,22 @@ case "$COMMAND" in
             | def ended($s): if $ended | has($s) then
                   "end of life" + (if $ended[$s] != "" then " since " + $ended[$s] else "" end) + " (endoflife.date)"
                 else null end;
-              # The floating tag of a stream, without a variant
-              def floating($s): ($current | map(select(.stream == $s))) as $in
-                | if any($in[]; .name == $s) then $s
-                  else ([$in[] | select(.name != .canonical) | .name | select(numeric)]
-                      | sort_by(split(".") | length) | first)
-                    // (if any($in[]; .name == "latest") then "latest" else null end)
+              # The tags that float with a stream, without a variant, the
+              # preferred one first. The shortest version tag of a stream
+              # that is named after a version (1 in go 1.27) is left out:
+              # it moves on to the next stream.
+              def floats($s): ($current | map(select(.stream == $s))) as $in
+                | any($in[]; .name == $s) as $named
+                | if $named and ($s | numeric) then [$s] else
+                    [ ([$in[] | select(.name != .canonical) | .name | select(numeric)]
+                        | sort_by(split(".") | length) | first // empty),
+                      (if $named then $s else $in[] | .name | select(. == "latest") end) ]
                   end;
+              def floating($s): floats($s) | first;
               # The tag an entry should be on, if that is another one
               def follow: . as $e
-                | (if $e.stream == null then null else floating($e.stream) end) as $f
+                | (if $e.stream == null or (floats($e.stream) | index($e.tag | prefix) != null) then null
+                   else floating($e.stream) end) as $f
                 | if $f == null then null else ($f | with($e.tag | suffix)) end
                 | if . != null and . != $e.tag and ($upstream[.] | usable) then . else null end;
               {
