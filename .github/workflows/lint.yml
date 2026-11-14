@@ -56,6 +56,13 @@ jobs:
           printf '%s\n' "${SCRIPTS[@]}"
           shellcheck "${SCRIPTS[@]}"
 
+      # The image tables in the README are written by hand.
+      - name: Check README Tags
+        run: .github/scripts/check-readme-tags.sh
+
+      - name: Test the Stream Watcher
+        run: .github/scripts/tests/stream-watch-test.sh
+
       - name: Audit Workflows (zizmor)
         env:
           GH_TOKEN: ${{ github.token }}
