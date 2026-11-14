@@ -54,8 +54,8 @@ Each image name links to its package page, which lists every tag and digest on t
 |---|---|---|---|
 | [`go`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgo) | `1.26`, `1.27` | Go toolchain, gcc, git, make | root |
 | [`go`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgo) | `1.26-builder`, `1.27-builder` | the above plus dnf | root |
-| [`nodejs`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnodejs) | `24`, `26` | Node.js with npm and npx; ships bash (`docker-entrypoint.sh`) | 65532 |
-| [`nodejs`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnodejs) | `24-builder`, `26-builder` | the above plus dnf | 65532 |
+| [`nodejs`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnodejs) | `22`, `24`, `26` | Node.js with npm and npx; ships bash (`docker-entrypoint.sh`) | 65532 |
+| [`nodejs`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnodejs) | `22-builder`, `24-builder`, `26-builder` | the above plus dnf | 65532 |
 | [`openjdk`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fopenjdk) | `21`, `25` | JDK (javac, jshell) | 65532 |
 | [`openjdk`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fopenjdk) | `21-runtime`, `25-runtime` | headless JRE; distroless, no shell | 65532 |
 | [`openjdk`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fopenjdk) | `21-builder`, `25-builder` | JDK plus bash and dnf | 65532 |
