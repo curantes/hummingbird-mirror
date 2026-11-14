@@ -90,9 +90,9 @@ images:
 
   # --- Database & Data Management ---
   - name: etcd
-    source: registry.access.redhat.com/hi/etcd:3@sha256:aea570961ff7b0c1732ed158e42f8890d8ccd85ccdde9e8fa84e9391ede20f17
+    source: registry.access.redhat.com/hi/etcd:3.7@sha256:aea570961ff7b0c1732ed158e42f8890d8ccd85ccdde9e8fa84e9391ede20f17
   - name: etcd
-    source: registry.access.redhat.com/hi/etcd:3-builder@sha256:57922435c4f9d610b8c57ae8747945e8c5df57d1254d7086f3412eddcdb78c10
+    source: registry.access.redhat.com/hi/etcd:3.7-builder@sha256:57922435c4f9d610b8c57ae8747945e8c5df57d1254d7086f3412eddcdb78c10
 
   - name: valkey
     source: registry.access.redhat.com/hi/valkey:9.0@sha256:be8b32ac6e80993290587ed3b1bbd6fac993e6e8c930268c501d3b4011c2d263
@@ -118,9 +118,9 @@ images:
 
   # --- Networking ---
   - name: coredns
-    source: registry.access.redhat.com/hi/coredns:1@sha256:3e41ca947f85925cffe170ee04f415235418778e7e1d8f684062628348800d36
+    source: registry.access.redhat.com/hi/coredns:1.15@sha256:3e41ca947f85925cffe170ee04f415235418778e7e1d8f684062628348800d36
   - name: coredns
-    source: registry.access.redhat.com/hi/coredns:1-builder@sha256:148ef8b96c9d2bd43b1b2847762fbb10efdc464ca7891cd245bb9e68e8ea4f85
+    source: registry.access.redhat.com/hi/coredns:1.15-builder@sha256:148ef8b96c9d2bd43b1b2847762fbb10efdc464ca7891cd245bb9e68e8ea4f85
 
   # --- Web Services ---
   - name: haproxy
