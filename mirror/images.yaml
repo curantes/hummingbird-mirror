@@ -112,7 +112,7 @@ images:
   - name: rabbitmq
     source: registry.access.redhat.com/hi/rabbitmq:4.3@sha256:d426a8c6f937aef29e8659cc90d62a22f3afa58c76f177e84588967cf537004d
   - name: rabbitmq
-    source: registry.access.redhat.com/hi/rabbitmq:4.3-builder@sha256:8c3df0bb05203da683aebf8ab5145eab977bd337c9181e88d28a289fe3aaf7d8
+    source: registry.access.redhat.com/hi/rabbitmq:4.3-builder@sha256:38354da9a4ddf3d6e993b06e84e58268547bccb939add842b5624a17ec7afefa
 
   # --- Networking ---
   - name: coredns
