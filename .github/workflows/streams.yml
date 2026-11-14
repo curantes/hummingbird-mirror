@@ -1,0 +1,211 @@
+name: Streams
+
+# Renovate refreshes the digest of every entry in mirror/images.yaml but
+# never adds or removes a stream. This workflow compares the allowlist with
+# the upstream catalog once a week:
+#
+# - A new upstream stream of a mirrored image gets a pull request that adds
+#   its entries. Nothing is mirrored before that PR is merged, and the
+#   mirror checks on it apply the new-stream gate.
+# - Mirrored streams that upstream has stopped maintaining are listed in
+#   one issue. Retiring a stream stays a manual change.
+#
+# See .github/scripts/stream-watch.sh for the rules.
+
+on:
+  # Wednesday: away from the weekly re-audit (Monday) and Renovate's weekly
+  # pull request for the workflows (Tuesday).
+  schedule:
+    - cron: '0 4 * * 3'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  CATALOG_API: https://api-hummingbird.hummingbird-project.io/v1
+  EOL_API: https://endoflife.date/api/v1
+  PLAN: ${{ github.workspace }}/stream-plan.json
+
+jobs:
+  watch:
+    name: Watch Upstream Streams
+    # The plan is made from the default branch, whatever a manual run picks.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write        # Push the streams/* branches
+      pull-requests: write   # Open the pull requests
+      issues: write          # Maintain the retirement issue
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # A failed catalog download leaves no file, and the plan then reports
+      # the image as an error instead of treating its streams as gone.
+      # endoflife.date doesn't know every image; no file means no data.
+      - name: Fetch Upstream Data
+        run: |
+          mkdir -p "$RUNNER_TEMP/catalog" "$RUNNER_TEMP/eol"
+          fetch() { curl --fail --silent --show-error --location --compressed --retry 3 --max-time 60 "$1" -o "$2"; }
+          while read -r name; do
+            fetch "$CATALOG_API/images/$name/tags" "$RUNNER_TEMP/catalog/$name.json" \
+              || { echo "::warning::No catalog data for $name"; rm -f "$RUNNER_TEMP/catalog/$name.json"; }
+            fetch "$EOL_API/products/$name/" "$RUNNER_TEMP/eol/$name.json" 2> /dev/null \
+              || rm -f "$RUNNER_TEMP/eol/$name.json"
+          done < <(.github/scripts/stream-watch.sh names --images mirror/images.yaml)
+
+      - name: Plan
+        run: |
+          .github/scripts/stream-watch.sh plan --images mirror/images.yaml \
+            --catalog "$RUNNER_TEMP/catalog" --eol "$RUNNER_TEMP/eol" > "$PLAN"
+          jq . "$PLAN"
+          {
+            echo "### Streams"
+            echo
+            jq -r '
+              def code: "`" + (tostring | gsub("[^A-Za-z0-9 ._:/@,()-]"; "?")) + "`";
+              "New streams: " + (if (.add | length) == 0 then "none" else ([.add[] | "\(.name):\(.stream)" | code] | join(", ")) end),
+              "",
+              "To retire: " + (if (.retire | length) == 0 then "none" else ([.retire[] | "\(.name):\(.tag)" | code] | join(", ")) end),
+              "",
+              "Not proposed, past end of life: " + (if (.skipped | length) == 0 then "none" else ([.skipped[] | "\(.name):\(.stream)" | code] | join(", ")) end),
+              "",
+              "Images without catalog data: " + (if (.errors | length) == 0 then "none" else ([.errors[] | code] | join(", ")) end)' "$PLAN"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # One pull request per new stream, on the branch streams/<name>-<stream>:
+      #   no pull request yet     open one
+      #   an open pull request    add a commit when upstream has newer digests
+      #                           or a variant has become available; commits
+      #                           pushed to the branch by hand are kept
+      #   last one closed unmerged  declined: do nothing until it is reopened
+      #
+      # Pull requests and pushes made with the workflow token don't start
+      # other workflows, so the required checks would never run. With the
+      # optional STREAM_WATCH_TOKEN secret (a token of a user or an app with
+      # contents and pull request write access) they do. Without it, closing
+      # and reopening the pull request starts them.
+      - name: Open or Update Pull Requests
+        env:
+          GH_TOKEN: ${{ secrets.STREAM_WATCH_TOKEN || github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          REMOTE="https://x-access-token:$GH_TOKEN@github.com/$GH_REPO.git"
+          BASE="$(git rev-parse HEAD)"
+
+          while read -r item <&3; do
+            NAME="$(jq -r '.name' <<< "$item")"
+            STREAM="$(jq -r '.stream' <<< "$item")"
+            ENTRIES="$(jq -c '.entries' <<< "$item")"
+            TAGS="$(jq -r '[.entries[].tag] | join(", ")' <<< "$item")"
+            # Names and tags become a branch name and Markdown.
+            if [[ ! "$NAME:$STREAM:$TAGS" =~ ^[A-Za-z0-9._:,\ -]+$ ]]; then
+              echo "::error::Unexpected characters in $NAME $STREAM ($TAGS); skipping"
+              continue
+            fi
+            BRANCH="streams/$NAME-$STREAM"
+            LAST="$(gh pr list --head "$BRANCH" --state all --json number,state \
+              --jq 'sort_by(.number) | last | select(. != null) | "\(.number) \(.state)"' < /dev/null)"
+            NUMBER="${LAST%% *}"
+            STATE="${LAST##* }"
+
+            case "$STATE" in
+              CLOSED)
+                echo "$NAME $STREAM: #$NUMBER was closed without merging; not proposed again"
+                continue
+                ;;
+              OPEN)
+                git fetch --quiet "$REMOTE" "refs/heads/$BRANCH" < /dev/null
+                git checkout --quiet --detach FETCH_HEAD
+                MESSAGE="chore(mirror): refresh the entries of $NAME $STREAM"
+                ;;
+              *)
+                git checkout --quiet --detach "$BASE"
+                MESSAGE="feat(mirror): add $NAME $STREAM"
+                ;;
+            esac
+
+            .github/scripts/stream-watch.sh apply --images mirror/images.yaml --entries "$ENTRIES" > "$RUNNER_TEMP/images.yaml"
+            cp "$RUNNER_TEMP/images.yaml" mirror/images.yaml
+            if git diff --quiet -- mirror/images.yaml; then
+              echo "$NAME $STREAM: #$NUMBER is up to date"
+              continue
+            fi
+            git commit --quiet -m "$MESSAGE" -m "Proposed by the Streams workflow from the upstream catalog: $TAGS." -- mirror/images.yaml
+            git push --quiet "$REMOTE" "HEAD:refs/heads/$BRANCH" < /dev/null
+
+            if [ "$STATE" = "OPEN" ]; then
+              echo "$NAME $STREAM: updated #$NUMBER"
+              continue
+            fi
+            {
+              echo "Upstream publishes the stream \`$STREAM\` of \`$NAME\`, and the mirror doesn't have it. This adds it to \`mirror/images.yaml\`: \`$TAGS\`."
+              echo
+              jq -r 'if (.unavailable | length) > 0 then
+                  "Not available upstream yet, added by a later run: " + ([.unavailable[] | "`" + . + "`"] | join(", ")) + ".\n"
+                else empty end' <<< "$item"
+              echo "Nothing is mirrored until this is merged. The mirror checks treat the entries as a new stream: they must have no fixable HIGH or CRITICAL findings."
+              echo
+              echo "Before merging:"
+              echo
+              echo "- [ ] Add the tags to the image table in the README. The \`Lint\` check fails until the table and \`mirror/images.yaml\` list the same tags."
+              echo "- [ ] Check that \`tests/$NAME/test.sh\` fits this version."
+              echo "- [ ] If no checks started, close and reopen this pull request. Pull requests opened with the workflow token don't start workflows."
+              echo
+              echo "To decline the stream, close this pull request. It is not proposed again unless you reopen it. While it is open, the weekly run adds a commit when upstream has newer digests."
+              echo
+              echo "Opened by the [Streams workflow]($RUN_URL)."
+            } > "$RUNNER_TEMP/pr-body.md"
+            gh pr create --head "$BRANCH" --base main --title "$MESSAGE" --body-file "$RUNNER_TEMP/pr-body.md" < /dev/null
+          done 3< <(jq -c '.add[]' "$PLAN")
+          git checkout --quiet --detach "$BASE"
+
+      - name: Open, Update or Close the Retirement Issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          LABEL: stream-watch
+        run: |
+          ISSUE="$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')"
+          if [ "$(jq '.retire | length' "$PLAN")" -eq 0 ]; then
+            if [ -n "$ISSUE" ]; then
+              gh issue close "$ISSUE" --comment "No mirrored stream is left to retire. $RUN_URL"
+            fi
+            exit 0
+          fi
+          {
+            echo "Upstream has stopped maintaining these mirrored streams. Renovate keeps refreshing an entry only while upstream rebuilds it."
+            echo
+            jq -r '
+              def code: "`" + (tostring | gsub("[^A-Za-z0-9 ._:/@,()-]"; "?")) + "`";
+              .retire[] | "- \("\(.name):\(.tag)" | code): \(.reason | gsub("[^A-Za-z0-9 ._:/,()-]"; "?"))"' "$PLAN"
+            echo
+            echo "To retire a stream, remove its entries from \`mirror/images.yaml\` and its tags from the README table, in one pull request. Its tags and digests stay on the mirror and are no longer refreshed."
+            echo
+            echo "This issue is rewritten by every run of the [Streams workflow]($RUN_URL) and closes when the list is empty."
+          } > "$RUNNER_TEMP/issue-body.md"
+          if [ -n "$ISSUE" ]; then
+            gh issue edit "$ISSUE" --body-file "$RUNNER_TEMP/issue-body.md"
+          else
+            gh label create "$LABEL" --color FBCA04 --description "Mirrored streams that upstream no longer maintains" --force
+            gh issue create --title "Streams to retire" --label "$LABEL" --body-file "$RUNNER_TEMP/issue-body.md"
+          fi
+
+      - name: Fail on Missing Catalog Data
+        run: |
+          MISSING="$(jq -r '.errors | join(", ")' "$PLAN")"
+          if [ -n "$MISSING" ]; then
+            echo "::error::No upstream catalog data for: $MISSING. Their streams were not checked."
+            exit 1
+          fi
