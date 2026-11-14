@@ -148,6 +148,12 @@ A refresh is compared with the baseline because upstream rebuilds often still ca
 
 The weekly run reports the findings of approved digests without failing on them. It still fails, and opens a `mirror-alert` issue, when a signature, a test or package detection fails.
 
+### Reports
+
+Every run that checks entries ends with a `Mirror Report` job. Its summary has one row per entry: the gate mode, the result of each job and the number of fixable HIGH/CRITICAL findings per architecture. Failed jobs come first, with the step that failed and, for the vulnerability gate, the findings that blocked it. On PRs the same report is posted as one comment, which later runs update (PRs from forks only get the run summary). The `mirror-alert` issue lists the failing entries and steps of every failed run on `main`.
+
+Each job uploads a small JSON report ([`job-report.sh`](.github/scripts/job-report.sh)), and [`mirror-report.sh`](.github/scripts/mirror-report.sh) renders them. The report is informational and separate from the required `Mirror Result` check, and the promotion never reads it.
+
 Renovate keeps the digests in `mirror/images.yaml` current. It only refreshes digests and never moves an entry to another stream. Each entry gets its own PR, which merges automatically once the checks pass, so an image that fails doesn't hold back the others. Updates to the actions and tools the mirror workflows use are not merged automatically: the VSA is trusted because `verify-promote.yml` on `main` signs it, so those changes get a review.
 
 ### Upstream Keys
