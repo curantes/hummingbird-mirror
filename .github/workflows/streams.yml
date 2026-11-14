@@ -6,9 +6,12 @@ name: Streams
 #
 # - A new upstream stream of a mirrored image gets a pull request that adds
 #   its entries. Nothing is mirrored before that PR is merged, and the
-#   mirror checks on it apply the new-stream gate.
-# - Mirrored streams that upstream has stopped maintaining are listed in
-#   one issue. Retiring a stream stays a manual change.
+#   mirror checks on it apply the new-stream gate. A stream is what the
+#   catalog calls one: a new version inside a mirrored stream (rust 1.100
+#   in the stream 1) is a digest refresh, not a new stream.
+# - Mirrored tags that upstream has stopped maintaining are listed in one
+#   issue, with the tag their stream continues as, if it does. Retiring or
+#   moving an entry stays a manual change.
 #
 # See .github/scripts/stream-watch.sh for the rules.
 
@@ -74,6 +77,8 @@ jobs:
               "New streams: " + (if (.add | length) == 0 then "none" else ([.add[] | "\(.name):\(.stream)" | code] | join(", ")) end),
               "",
               "To retire: " + (if (.retire | length) == 0 then "none" else ([.retire[] | "\(.name):\(.tag)" | code] | join(", ")) end),
+              "",
+              "Narrower than their upstream stream: " + (if (.narrow | length) == 0 then "none" else ([.narrow[] | "\(.name):\(.tag) (stream \(.stream), floats as \(.follow))" | code] | join(", ")) end),
               "",
               "Not proposed, past end of life: " + (if (.skipped | length) == 0 then "none" else ([.skipped[] | "\(.name):\(.stream)" | code] | join(", ")) end),
               "",
@@ -185,13 +190,15 @@ jobs:
             exit 0
           fi
           {
-            echo "Upstream has stopped maintaining these mirrored streams. Renovate keeps refreshing an entry only while upstream rebuilds it."
+            echo "Upstream has stopped maintaining these mirrored tags. Renovate keeps refreshing an entry only while upstream rebuilds it."
             echo
             jq -r '
               def code: "`" + (tostring | gsub("[^A-Za-z0-9 ._:/@,()-]"; "?")) + "`";
               .retire[] | "- \("\(.name):\(.tag)" | code): \(.reason | gsub("[^A-Za-z0-9 ._:/,()-]"; "?"))"' "$PLAN"
             echo
             echo "To retire a stream, remove its entries from \`mirror/images.yaml\` and its tags from the README table, in one pull request. Its tags and digests stay on the mirror and are no longer refreshed."
+            echo
+            echo "Where the reason names a tag that the stream continues as, the stream is still maintained and only the mirrored tag is too narrow: change the tag of the entry to that one, in \`mirror/images.yaml\` and the README table."
             echo
             echo "This issue is rewritten by every run of the [Streams workflow]($RUN_URL) and closes when the list is empty."
           } > "$RUNNER_TEMP/issue-body.md"
