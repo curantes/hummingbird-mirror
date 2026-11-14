@@ -54,7 +54,7 @@ images:
   - name: php
     source: registry.access.redhat.com/hi/php:8.5@sha256:0ab2bd7c6b14e39881f8b43f6d0b54be8056e16b973417a53b5fe371344499a6
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:b692f04036478c427152258341a0618df2cdc0fd2aaff4c3090e2dafa54055e7
+    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:f981caf17c413ebf03b26c932069a745e55561150be337f15c21e7b11e12ff7f
   - name: php
     source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:d01ee643f9d19b2b0659f541abddbb9b4c038dd4160ef8bb71e4715b4816657f
   - name: php
