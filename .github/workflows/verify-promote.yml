@@ -64,20 +64,21 @@ jobs:
     permissions:
       contents: read
     outputs:
-      ref: ${{ steps.parse.outputs.ref }}
-      digest: ${{ steps.parse.outputs.digest }}
-      tag: ${{ steps.parse.outputs.tag }}
-      mode: ${{ steps.parse.outputs.mode }}
-      version: ${{ steps.version.outputs.version }}
-      suffix: ${{ steps.version.outputs.suffix }}
+      ref: ${{ steps.source-reference.outputs.ref }}
+      digest: ${{ steps.source-reference.outputs.digest }}
+      tag: ${{ steps.source-reference.outputs.tag }}
+      mode: ${{ steps.source-reference.outputs.mode }}
+      version: ${{ steps.upstream-version.outputs.version }}
+      suffix: ${{ steps.upstream-version.outputs.suffix }}
     steps:
       - name: Checkout Source
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Parse Source Reference
-        id: parse
+        id: source-reference
         run: |
           NAME_TAG="${SOURCE%%@*}"
           DIGEST="${SOURCE##*@}"
@@ -115,11 +116,13 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Install Cosign
+        id: install-cosign
         uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
 
       - name: Verify Red Hat Signature and SBOM Attestation
+        id: upstream-signature
         env:
-          REF: ${{ steps.parse.outputs.ref }}
+          REF: ${{ steps.source-reference.outputs.ref }}
         run: |
           # A platform-manifest pin would silently drop the other architectures.
           ARCHS="$(docker buildx imagetools inspect --raw "$REF" \
@@ -134,10 +137,10 @@ jobs:
       # Guards against a digest that belongs to another stream (e.g. go:1.26
       # pinned to a 1.27.x image).
       - name: Resolve Upstream Version
-        id: version
+        id: upstream-version
         env:
-          REF: ${{ steps.parse.outputs.ref }}
-          TAG: ${{ steps.parse.outputs.tag }}
+          REF: ${{ steps.source-reference.outputs.ref }}
+          TAG: ${{ steps.source-reference.outputs.tag }}
         run: |
           STREAM="${TAG%%-*}"
           SUFFIX="${TAG#"$STREAM"}"
@@ -168,6 +171,33 @@ jobs:
             echo "suffix=$SUFFIX"
           } >> "$GITHUB_OUTPUT"
 
+      # What this job did, for the run summary, the PR comment and the alert
+      # issue (see .github/scripts/mirror-report.sh). Informational: a report
+      # that can't be written or uploaded must not fail the job.
+      - name: Write Job Report
+        id: report
+        if: always()
+        continue-on-error: true
+        env:
+          STATUS: ${{ job.status }}
+          STEPS: ${{ toJSON(steps) }}
+          MODE: ${{ steps.source-reference.outputs.mode }}
+        run: |
+          .github/scripts/job-report.sh --job verify --name "$NAME" --source "$SOURCE" \
+            --status "$STATUS" --steps "$STEPS" --out-dir "$RUNNER_TEMP/report" \
+            --mode "$MODE"
+
+      - name: Upload Job Report
+        if: always() && steps.report.outputs.artifact != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.report.outputs.artifact }}
+          path: ${{ steps.report.outputs.path }}
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
   test-scan:
     name: Test & Scan (${{ matrix.arch }})
     needs: verify
@@ -194,32 +224,37 @@ jobs:
       BASELINE_IMAGE: local/${{ inputs.name }}:${{ needs.verify.outputs.tag }}-baseline
     steps:
       - name: Checkout Source
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Pull Upstream Image
+        id: pull-image
         run: |
           docker pull --platform "linux/$ARCH" "$REF"
           docker tag "$REF" "$TEST_IMAGE"
 
       - name: Run Container Sanity Tests
+        id: sanity-tests
         run: bash "tests/$NAME/test.sh" "$TEST_IMAGE" "$TAG"
 
       - name: Install Syft
-        id: syft
+        id: install-syft
         uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
           syft-version: ${{ env.SYFT_VERSION }}
 
       - name: Generate Test SBOM
+        id: sbom
         env:
-          SYFT: ${{ steps.syft.outputs.cmd }}
+          SYFT: ${{ steps.install-syft.outputs.cmd }}
         run: '"$SYFT" -q "docker:$TEST_IMAGE" -o syft-json=sbom.syft.json'
 
       # A scanner that doesn't recognise the distro sees no packages and
       # reports zero vulnerabilities (Trivy does this for Hummingbird OS).
       - name: Verify Package Detection
+        id: package-detection
         run: |
           DISTRO="$(jq -r '.distro.id // ""' sbom.syft.json)"
           PKGS="$(jq '[.artifacts[] | select(.type == "rpm")] | length' sbom.syft.json)"
@@ -249,6 +284,7 @@ jobs:
       # The regression gate compares against what the mirror serves today,
       # so the baseline comes from the mirror, not from upstream.
       - name: Pull Baseline Image from Mirror
+        id: pull-baseline
         if: needs.verify.outputs.mode == 'refresh'
         run: |
           if ! docker pull --platform "linux/$ARCH" "$MIRROR_IMAGE@$BASELINE"; then
@@ -258,9 +294,10 @@ jobs:
           docker tag "$MIRROR_IMAGE@$BASELINE" "$BASELINE_IMAGE"
 
       - name: Generate Baseline SBOM
+        id: baseline-sbom
         if: needs.verify.outputs.mode == 'refresh'
         env:
-          SYFT: ${{ steps.syft.outputs.cmd }}
+          SYFT: ${{ steps.install-syft.outputs.cmd }}
         run: |
           "$SYFT" -q "docker:$BASELINE_IMAGE" -o syft-json=baseline.syft.json
           # A baseline without detected packages would report no findings
@@ -274,7 +311,7 @@ jobs:
           fi
 
       - name: Install Grype
-        id: grype-install
+        id: install-grype
         uses: anchore/scan-action/download-grype@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         with:
           grype-version: ${{ env.GRYPE_VERSION }}
@@ -283,8 +320,9 @@ jobs:
       # with retries and scan against it without updating: both images are
       # then scanned with the same database.
       - name: Update Grype Database
+        id: grype-database
         env:
-          GRYPE: ${{ steps.grype-install.outputs.cmd }}
+          GRYPE: ${{ steps.install-grype.outputs.cmd }}
         run: |
           for attempt in 1 2 3; do
             "$GRYPE" db update && exit 0
@@ -296,8 +334,9 @@ jobs:
       # Unfixed vulnerabilities are left out, as before; the gate script
       # decides, so Grype itself never fails on findings here.
       - name: Vulnerability Scan (Grype)
+        id: vulnerability-scan
         env:
-          GRYPE: ${{ steps.grype-install.outputs.cmd }}
+          GRYPE: ${{ steps.install-grype.outputs.cmd }}
           GRYPE_DB_AUTO_UPDATE: "false"
         run: |
           "$GRYPE" -q sbom:sbom.syft.json --only-fixed \
@@ -307,6 +346,7 @@ jobs:
           fi
 
       - name: Upload Grype Scan Results to GitHub Security
+        id: upload-scan-results
         uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         if: always() && hashFiles('new.grype.sarif') != ''
         with:
@@ -314,8 +354,9 @@ jobs:
           category: grype-${{ inputs.name }}-${{ needs.verify.outputs.tag }}-${{ matrix.arch }}
 
       - name: Vulnerability Gate
+        id: vulnerability-gate
         env:
-          GRYPE: ${{ steps.grype-install.outputs.cmd }}
+          GRYPE: ${{ steps.install-grype.outputs.cmd }}
         run: |
           ARGS=(--mode "$MODE" --new new.grype.json --result gate-result.json
             --summary "$GITHUB_STEP_SUMMARY" --label "$NAME:$TAG ($ARCH)")
@@ -341,10 +382,35 @@ jobs:
           cat "gate-$ARCH.json"
 
       - name: Upload Gate Result
+        id: upload-gate-result
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gate-${{ inputs.name }}-${{ needs.verify.outputs.tag }}-${{ matrix.arch }}
           path: gate-${{ matrix.arch }}.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+      # See the verify job.
+      - name: Write Job Report
+        id: report
+        if: always()
+        continue-on-error: true
+        env:
+          STATUS: ${{ job.status }}
+          STEPS: ${{ toJSON(steps) }}
+        run: |
+          .github/scripts/job-report.sh --job test-scan --name "$NAME" --source "$SOURCE" \
+            --status "$STATUS" --steps "$STEPS" --out-dir "$RUNNER_TEMP/report" \
+            --arch "$ARCH" --mode "$MODE" --gate gate-result.json
+
+      - name: Upload Job Report
+        if: always() && steps.report.outputs.artifact != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.report.outputs.artifact }}
+          path: ${{ steps.report.outputs.path }}
           if-no-files-found: error
           overwrite: true
           retention-days: 7
@@ -370,20 +436,24 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout Source
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       # Cosign first: the regctl installer verifies its download with it.
       - name: Install Cosign
+        id: install-cosign
         uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
 
       - name: Install regctl
+        id: install-regctl
         uses: regclient/actions/regctl-installer@dd58ad94f76adb73d8ac1bf75ed25f01545d5b32 # v0.2.0
         with:
           release: ${{ env.REGCTL_VERSION }}
 
       - name: Log in to GHCR
+        id: registry-login
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
@@ -399,6 +469,7 @@ jobs:
       # regctl may then exit non-zero on unrelated upstream junk tags, so the
       # next step's verification is the gate, not regctl's exit code.
       - name: Copy Image with Signatures and Attestations
+        id: copy-image
         run: |
           # GHCR rate-limits pushes (429) and can briefly deny pushes to a
           # package that is still being created (403), so retry the copy.
@@ -427,6 +498,7 @@ jobs:
           done
 
       - name: Verify Mirrored Copy
+        id: verify-mirrored-copy
         run: |
           MIRRORED="$(regctl image digest "$MIRROR_IMAGE@$DIGEST")"
           if [ "$MIRRORED" != "$DIGEST" ]; then
@@ -464,6 +536,7 @@ jobs:
       # `gate-php-8.5-*` also matches `gate-php-8.5-builder-amd64`, and the
       # files of both entries would overwrite each other in one directory.
       - name: Download Gate Result (amd64)
+        id: download-gate-result-amd64
         if: steps.approval.outputs.approved == 'false'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -471,6 +544,7 @@ jobs:
           path: gate
 
       - name: Download Gate Result (arm64)
+        id: download-gate-result-arm64
         if: steps.approval.outputs.approved == 'false'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -482,6 +556,7 @@ jobs:
       # a new stream because it has none. The VSA means "passed at promotion
       # time"; it does not expire and is not reissued by later audits.
       - name: Write Verification Summary
+        id: verification-summary
         if: steps.approval.outputs.approved == 'false'
         run: |
           case "$MODE" in
@@ -536,6 +611,7 @@ jobs:
           cat vsa.json
 
       - name: Attest Verification Summary (VSA)
+        id: attest
         if: steps.approval.outputs.approved == 'false'
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
@@ -570,6 +646,7 @@ jobs:
           echo "tags=${TAGS[*]}" >> "$GITHUB_OUTPUT"
 
       - name: Write Job Summary
+        id: job-summary
         env:
           TAGS: ${{ steps.tags.outputs.tags }}
           APPROVED: ${{ steps.approval.outputs.approved }}
@@ -583,3 +660,29 @@ jobs:
             echo "Tags:"
             for t in $TAGS; do printf -- "- \`%s\`\n" "$t"; done
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # See the verify job.
+      - name: Write Job Report
+        id: report
+        if: always()
+        continue-on-error: true
+        env:
+          STATUS: ${{ job.status }}
+          STEPS: ${{ toJSON(steps) }}
+          TAGS: ${{ steps.tags.outputs.tags }}
+          APPROVED: ${{ steps.approval.outputs.approved }}
+        run: |
+          .github/scripts/job-report.sh --job promote --name "$NAME" --source "$SOURCE" \
+            --status "$STATUS" --steps "$STEPS" --out-dir "$RUNNER_TEMP/report" \
+            --mode "$MODE" --tags "$TAGS" --approved "$APPROVED"
+
+      - name: Upload Job Report
+        if: always() && steps.report.outputs.artifact != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.report.outputs.artifact }}
+          path: ${{ steps.report.outputs.path }}
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
