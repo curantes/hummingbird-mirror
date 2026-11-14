@@ -39,18 +39,18 @@ All images are multi-arch (`linux/amd64`, `linux/arm64`) under `ghcr.io/curantes
 docker pull ghcr.io/curantes/hummingbird-mirror/go:1.27
 ```
 
-Each image name links to its package page, which lists every tag and digest on the mirror. All packages are listed [here](https://github.com/curantes?tab=packages&repo_name=hummingbird-mirror).
+The tables list one tag per mirrored stream: the tag that moves with that stream. Each image also has version and timestamp tags, described under [Tagging Convention](#tagging-convention). Each image name links to its package page, which lists every tag and digest on the mirror. All packages are listed [here](https://github.com/curantes?tab=packages&repo_name=hummingbird-mirror).
 
 ### Operating System
 
-| Image | Tags | Contents | User |
+| Image | Stream tags | Contents | User |
 |---|---|---|---|
 | [`core-runtime`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcore-runtime) | `latest` | glibc runtime with bash | 65532 |
 | [`static`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fstatic) | `latest` | CA certificates, tzdata; no shell, no libc | 65532 |
 
 ### Programming Languages & Runtimes
 
-| Image | Tags | Contents | User |
+| Image | Stream tags | Contents | User |
 |---|---|---|---|
 | [`go`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgo) | `1.26`, `1.27` | Go toolchain, gcc, git, make | root |
 | [`go`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fgo) | `1.26-builder`, `1.27-builder` | the above plus dnf | root |
@@ -70,7 +70,7 @@ Each image name links to its package page, which lists every tag and digest on t
 
 ### Database & Data Management
 
-| Image | Tags | Contents | User |
+| Image | Stream tags | Contents | User |
 |---|---|---|---|
 | [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3.7` | etcd, etcdctl and etcdutl; client port 2379, peer port 2380, data in `/var/lib/etcd`; distroless, no shell | 65532 |
 | [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3.7-builder` | the above plus bash, curl and dnf | 65532 |
@@ -79,7 +79,7 @@ Each image name links to its package page, which lists every tag and digest on t
 
 ### Developer Tools
 
-| Image | Tags | Contents | User |
+| Image | Stream tags | Contents | User |
 |---|---|---|---|
 | [`curl`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcurl) | `8` | curl with HTTP/2 and OpenSSL, and the system CA trust store; the entrypoint is `curl`; distroless, no shell | 65532 |
 | [`curl`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcurl) | `8-builder` | the above plus bash and dnf | 65532 |
@@ -88,21 +88,21 @@ Each image name links to its package page, which lists every tag and digest on t
 
 ### Messaging
 
-| Image | Tags | Contents | User |
+| Image | Stream tags | Contents | User |
 |---|---|---|---|
 | [`rabbitmq`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Frabbitmq) | `4.3` | RabbitMQ broker and CLI tools; AMQP on 5672, data in `/var/lib/rabbitmq` (keep the hostname stable, it names the node and its data directory); `guest` only works from inside the container; plugins such as `rabbitmq_management` ship but are disabled, and `/etc/rabbitmq` isn't writable, so mount an `enabled_plugins` file to enable them; ships bash | 65532 |
 | [`rabbitmq`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Frabbitmq) | `4.3-builder` | the above plus curl and dnf | 65532 |
 
 ### Networking
 
-| Image | Tags | Contents | User |
+| Image | Stream tags | Contents | User |
 |---|---|---|---|
 | [`coredns`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcoredns) | `1.15` | CoreDNS; without a Corefile, answers `whoami` on port 53; pass `-conf` to use a mounted Corefile; the binary has no file capabilities, so port 53 needs unprivileged low ports (Docker's default; with Podman add `--sysctl net.ipv4.ip_unprivileged_port_start=0`); distroless, no shell | 65532 |
 | [`coredns`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcoredns) | `1.15-builder` | the above plus bash, curl and dnf | 65532 |
 
 ### Web Services
 
-| Image | Tags | Contents | User |
+| Image | Stream tags | Contents | User |
 |---|---|---|---|
 | [`haproxy`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fhaproxy) | `3.0` | HAProxy (LTS); ships no configuration, mount one at `/usr/local/etc/haproxy/haproxy.cfg`; distroless, no shell | `haproxy` (999) |
 | [`haproxy`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fhaproxy) | `3.0-builder` | the above plus bash, curl and dnf | `haproxy` (999) |
