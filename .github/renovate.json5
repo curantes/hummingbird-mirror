@@ -51,9 +51,17 @@
       "branchTopic": "{{{depNameSanitized}}}-{{{currentValue}}}"
     },
     {
-      "matchManagers": ["github-actions"],
+      // Everything the workflows pin, in one weekly PR: the actions in
+      // `uses:` and the tool versions behind `# renovate:` comments (Syft,
+      // Grype, regctl, the linters, kind, Kyverno). The tool versions come
+      // from the regex manager, so the rule matches files, not a manager.
+      // Tuesday, because the weekly re-audit and the policy test run on
+      // Monday morning and a change to the mirror workflows checks every
+      // entry again.
+      "matchFileNames": [".github/workflows/**"],
+      "matchPackageNames": ["!renovate"],
       "groupName": "github-actions-dependencies",
-      "schedule": ["before 4am on monday"]
+      "schedule": ["before 4am on tuesday"]
     },
     {
       // Low-risk updates merge on their own once the required checks pass;
@@ -65,31 +73,35 @@
     {
       // The VSA is trusted because verify-promote.yml on main signs it, so
       // changes to the actions and tools the mirror workflows run need a
-      // human review. After the rule above: later rules win.
-      "matchManagers": ["github-actions"],
+      // human review. The other workflows get one too: the Policy workflow
+      // that tests a new Kyverno or kind is not a required check, and the
+      // updates share one PR anyway. After the rule above: later rules win.
+      "matchFileNames": [".github/workflows/**"],
       "automerge": false
     },
     {
-      "matchFileNames": [
-        ".github/workflows/mirror.yml",
-        ".github/workflows/verify-promote.yml"
-      ],
-      "automerge": false
-    },
-    {
-      // Renovate ships minor releases every few days. The pinned version only
-      // runs renovate-config-validator, which the update's own Renovate Config
-      // check exercises.
+      // Renovate ships several releases a day. The pinned version only runs
+      // renovate-config-validator, which the update's own Renovate Config
+      // check exercises, so take one update a week and merge it unattended.
+      // After the rule above: later rules win.
       "matchPackageNames": ["renovate"],
-      "matchUpdateTypes": ["minor"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "schedule": ["before 4am on tuesday"],
       "automerge": true,
       "platformAutomerge": true
+    },
+    {
+      // Renovate updates the `runs-on` labels but not the labels in the
+      // test-scan matrix of verify-promote.yml, which would leave the
+      // workflows on two Ubuntu releases. Runner images are moved by hand.
+      "matchDatasources": ["github-runners"],
+      "enabled": false
     },
     {
       // Give upstream time to yank a bad release before it can automerge.
       // Not applied to image digests: they lack release timestamps and would
       // stay pending, and their refreshes usually carry CVE fixes.
-      "matchDatasources": ["github-tags", "github-releases", "github-runners", "npm"],
+      "matchDatasources": ["github-tags", "github-releases", "npm"],
       "minimumReleaseAge": "3 days"
     }
   ]
