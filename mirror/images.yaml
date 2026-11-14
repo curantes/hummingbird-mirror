@@ -122,7 +122,7 @@ images:
 
   # --- Web Services ---
   - name: haproxy
-    source: registry.access.redhat.com/hi/haproxy:3.0@sha256:5a1f92099a17f27069a7b7b52bd14af0cd70f859b7afeff29a89c0e3e5a58eb7
+    source: registry.access.redhat.com/hi/haproxy:3.0@sha256:436f49581c6441f2bb27cc2897e2e53ee84dd0ef64bcfcb3c611c88b63008b7f
   - name: haproxy
     source: registry.access.redhat.com/hi/haproxy:3.0-builder@sha256:58bd2659b859d9ee8c314b550bfb6db9fbef7274aa5de18d4e29affec0a00f7a
 
