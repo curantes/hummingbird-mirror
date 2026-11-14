@@ -72,8 +72,8 @@ Each image name links to its package page, which lists every tag and digest on t
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3.7` | etcd, etcdctl and etcdutl; client port 2379, peer port 2380, data in `/var/lib/etcd`; distroless, no shell | 65532 |
-| [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3.7-builder` | the above plus bash, curl and dnf | 65532 |
+| [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3` | etcd, etcdctl and etcdutl; client port 2379, peer port 2380, data in `/var/lib/etcd`; distroless, no shell | 65532 |
+| [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3-builder` | the above plus bash, curl and dnf | 65532 |
 | [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `9.0` | Valkey server and CLI on port 6379, data in `/data`; runs without a configuration, so protected mode refuses remote clients until you set a password (`--requirepass`) or mount one; ships bash | 65532 |
 | [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `9.0-builder` | the above plus curl and dnf | 65532 |
 
@@ -97,8 +97,8 @@ Each image name links to its package page, which lists every tag and digest on t
 
 | Image | Tags | Contents | User |
 |---|---|---|---|
-| [`coredns`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcoredns) | `1.15` | CoreDNS; without a Corefile, answers `whoami` on port 53; pass `-conf` to use a mounted Corefile; the binary has no file capabilities, so port 53 needs unprivileged low ports (Docker's default; with Podman add `--sysctl net.ipv4.ip_unprivileged_port_start=0`); distroless, no shell | 65532 |
-| [`coredns`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcoredns) | `1.15-builder` | the above plus bash, curl and dnf | 65532 |
+| [`coredns`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcoredns) | `1` | CoreDNS; without a Corefile, answers `whoami` on port 53; pass `-conf` to use a mounted Corefile; the binary has no file capabilities, so port 53 needs unprivileged low ports (Docker's default; with Podman add `--sysctl net.ipv4.ip_unprivileged_port_start=0`); distroless, no shell | 65532 |
+| [`coredns`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fcoredns) | `1-builder` | the above plus bash, curl and dnf | 65532 |
 
 ### Web Services
 
@@ -106,8 +106,8 @@ Each image name links to its package page, which lists every tag and digest on t
 |---|---|---|---|
 | [`haproxy`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fhaproxy) | `3.0` | HAProxy (LTS); ships no configuration, mount one at `/usr/local/etc/haproxy/haproxy.cfg`; distroless, no shell | `haproxy` (999) |
 | [`haproxy`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fhaproxy) | `3.0-builder` | the above plus bash, curl and dnf | `haproxy` (999) |
-| [`nginx`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnginx) | `1.30` | nginx serving a default page on port 8080; configuration in `/etc/nginx/conf.d/`; distroless, no shell | 65532 |
-| [`nginx`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnginx) | `1.30-builder` | the above plus bash, curl and dnf | 65532 |
+| [`nginx`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnginx) | `1` | nginx serving a default page on port 8080; configuration in `/etc/nginx/conf.d/`; distroless, no shell | 65532 |
+| [`nginx`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fnginx) | `1-builder` | the above plus bash, curl and dnf | 65532 |
 
 The approved set is defined in [`mirror/images.yaml`](mirror/images.yaml).
 
