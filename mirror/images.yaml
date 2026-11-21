@@ -135,4 +135,4 @@ images:
   - name: nginx
     source: registry.access.redhat.com/hi/nginx:1@sha256:e91520eb223fc92e5e7623cda9d4f71812ca76d7b0eee584274b824511b719fa
   - name: nginx
-    source: registry.access.redhat.com/hi/nginx:1-builder@sha256:d7fc2f97a110bfa58a7fab08b1d1b696a3b94dae40c4dbf0f24defe5b3d14746
+    source: registry.access.redhat.com/hi/nginx:1-builder@sha256:baf210a6c74eb44eaf5613086a609132ffd5e3d19d6539956fd5574cd0d0d99a
