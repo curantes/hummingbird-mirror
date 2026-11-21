@@ -124,7 +124,7 @@ images:
   - name: coredns
     source: registry.access.redhat.com/hi/coredns:1.15@sha256:34c621f8a9eec0cad8dedab9d580b177fbd16895f5b96388c9051d3a873552c9
   - name: coredns
-    source: registry.access.redhat.com/hi/coredns:1.15-builder@sha256:148ef8b96c9d2bd43b1b2847762fbb10efdc464ca7891cd245bb9e68e8ea4f85
+    source: registry.access.redhat.com/hi/coredns:1.15-builder@sha256:50ce6c0f4811cadf1fc95668419fecca34fa9b69532b01f5946242eacf988ac0
 
   # --- Web Services ---
   - name: haproxy
