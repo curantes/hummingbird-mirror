@@ -171,7 +171,14 @@ jobs:
               echo
               echo "Opened by the [Streams workflow]($RUN_URL)."
             } > "$RUNNER_TEMP/pr-body.md"
-            gh pr create --head "$BRANCH" --base main --title "$MESSAGE" --body-file "$RUNNER_TEMP/pr-body.md" < /dev/null
+            PR_URL="$(gh pr create --head "$BRANCH" --base main --title "$MESSAGE" --body-file "$RUNNER_TEMP/pr-body.md" < /dev/null)"
+            echo "$PR_URL"
+            # mirror/ has no code owner (see CODEOWNERS), so ask for the review
+            # here. Fails harmlessly if the token's user is the owner, as
+            # authors can't review their own pull requests.
+            gh api --method POST "repos/$GH_REPO/pulls/${PR_URL##*/}/requested_reviewers" \
+              -f "reviewers[]=$GITHUB_REPOSITORY_OWNER" --silent < /dev/null \
+              || echo "::warning::Could not request a review of $PR_URL from $GITHUB_REPOSITORY_OWNER"
           done 3< <(jq -c '.add[]' "$PLAN")
           git checkout --quiet --detach "$BASE"
 
