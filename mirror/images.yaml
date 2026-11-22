@@ -116,7 +116,7 @@ images:
 
   # --- Messaging ---
   - name: rabbitmq
-    source: registry.access.redhat.com/hi/rabbitmq:4.3@sha256:69fa1a52d2406e8cff71d56ee706d43fc7e647edf38c06a6e411494e9c1a2547
+    source: registry.access.redhat.com/hi/rabbitmq:4.3@sha256:ed3b196d8e793cea6ce82a3b7fab457af2ad9445c2e7ce6de2617e6b3296ffc9
   - name: rabbitmq
     source: registry.access.redhat.com/hi/rabbitmq:4.3-builder@sha256:b41e2a05e84387d27e05d0077660fb5f8e364ef42afda5b574d4ce90c8e610f9
 
