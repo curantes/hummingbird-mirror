@@ -60,7 +60,7 @@ images:
   - name: php
     source: registry.access.redhat.com/hi/php:8.5@sha256:074130727ba0ec2f208051ae7027274dbfaba011bdb0f888cc3ac0f532a69fbc
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:961a1f10ba54c33f6449a7425491c5a3b3aed8979acc317e8a441905066586ef
+    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:374375f60713e53dc87c074558d5792e005508954a72874e209122acd0c6417e
   - name: php
     source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:d835e588c2d1710ba21fb8885bb33f4e5ff7dd81825c7345cd2f63f0cd13ea36
   - name: php
