@@ -210,10 +210,10 @@ IMAGE=ghcr.io/curantes/hummingbird-mirror/go:1.27
 cosign verify --key policy/keys/redhat-release3.pub --insecure-ignore-tlog "$IMAGE"
 cosign verify-attestation --key policy/keys/redhat-release3.pub --insecure-ignore-tlog --type spdx "$IMAGE"
 
-# Our approval (VSA)
+# Our approval (VSA), valid only when the promotion workflow on main signed it
 gh attestation verify "oci://$IMAGE" --bundle-from-oci \
   --repo curantes/hummingbird-mirror \
-  --signer-workflow curantes/hummingbird-mirror/.github/workflows/verify-promote.yml \
+  --cert-identity https://github.com/curantes/hummingbird-mirror/.github/workflows/verify-promote.yml@refs/heads/main \
   --predicate-type https://slsa.dev/verification_summary/v1
 ```
 
