@@ -42,7 +42,7 @@ images:
   - name: nodejs
     source: registry.access.redhat.com/hi/nodejs:26@sha256:017356447e055abec0d6f352928e437f38228895ecb72dd40f2df12e6e461dc8
   - name: nodejs
-    source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:5fe8931229ba1707b48c432a3ac4891abcd0f5e4f413bd7f11677d24c5ed7eef
+    source: registry.access.redhat.com/hi/nodejs:26-builder@sha256:308862bec84820d6d0edcc0ef17863856cc36e9b58f430613caa90a3575d5f77
 
   - name: openjdk
     source: registry.access.redhat.com/hi/openjdk:21@sha256:dfe3cfdffb102e2ae047dcd1f9536cf2bf916662c02255fcc2a2927780c6b1f6
