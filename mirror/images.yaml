@@ -29,7 +29,7 @@ images:
   - name: go
     source: registry.access.redhat.com/hi/go:1.27@sha256:a815db8caa85a05693b10f6f0bb16883960fd516074f3c060dde5dde20c92db1
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:2f8d4b3a800ad5db0236938f234b5211dfd73a4939ad972285b1ca36afb1e214
+    source: registry.access.redhat.com/hi/go:1.27-builder@sha256:fbda9826f239d94c04cedd5319bcce18ea419296374ad02966be58154a51be51
 
   - name: nodejs
     source: registry.access.redhat.com/hi/nodejs:22@sha256:94238f6703229b81c7123519072c9d1798cbc0c584b8742aa730f2d808a0e81b
