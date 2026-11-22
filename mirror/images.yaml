@@ -60,7 +60,7 @@ images:
   - name: php
     source: registry.access.redhat.com/hi/php:8.5@sha256:c8dbd7a7ef3db516a8de45e5a913c3c57b1acf818944228808183536799abbcf
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:dd077404cc25820eaeb72f2b9a992bf4813c7d95c69b5ee8df2d2aca161db24f
+    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:374375f60713e53dc87c074558d5792e005508954a72874e209122acd0c6417e
   - name: php
     source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:24605477890bb2240df5799040c8d89243c8a32cb47b12c3720dd7a81fae58be
   - name: php
@@ -128,7 +128,7 @@ images:
 
   # --- Web Services ---
   - name: haproxy
-    source: registry.access.redhat.com/hi/haproxy:3.0@sha256:5556c809d8444b379d717ceb5b7819ad7d8874ff7e8d9ed13e0215425b61fe40
+    source: registry.access.redhat.com/hi/haproxy:3.0@sha256:a7f96aa281761197148ef7e24c8fe75b8e4569ad1d651514a00213ee76941551
   - name: haproxy
     source: registry.access.redhat.com/hi/haproxy:3.0-builder@sha256:79564a26d308bf79f7c173d7ad2b4547e07b90d3c932e8685b9920eec93a9cbe
 
