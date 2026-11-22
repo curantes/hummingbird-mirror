@@ -23,7 +23,7 @@ images:
 
   # --- Programming Languages & Runtimes ---
   - name: go
-    source: registry.access.redhat.com/hi/go:1.26@sha256:50ebde66101c6cc1902a462db3fd6b4249c8fbba40eea47581bf60daecf7c8ec
+    source: registry.access.redhat.com/hi/go:1.26@sha256:7cc50393aad5b3955c9f1ef2d9a1244fb05764d025fecbce27f5592a607e40f5
   - name: go
     source: registry.access.redhat.com/hi/go:1.26-builder@sha256:a489b97e839dc1dccd595abc2043f3ab5e1450f11b9ade55678610dfb7b63b49
   - name: go
