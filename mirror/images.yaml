@@ -27,7 +27,7 @@ images:
   - name: go
     source: registry.access.redhat.com/hi/go:1.26-builder@sha256:1efd2d62053954e80265c05dac6169b3173dc5e7f4f215e9f526e174964c163e
   - name: go
-    source: registry.access.redhat.com/hi/go:1.27@sha256:a815db8caa85a05693b10f6f0bb16883960fd516074f3c060dde5dde20c92db1
+    source: registry.access.redhat.com/hi/go:1.27@sha256:845549c9eb4151443416a5441bd06823669aacd74e14fb65a4b9cd2694651233
   - name: go
     source: registry.access.redhat.com/hi/go:1.27-builder@sha256:fbda9826f239d94c04cedd5319bcce18ea419296374ad02966be58154a51be51
 
