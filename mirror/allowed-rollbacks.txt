@@ -1,0 +1,9 @@
+# Intended rollbacks, read by .github/scripts/rollback-guard.sh.
+#
+# A refresh to a build older than the one the mirror serves fails. To roll
+# back on purpose, add a line with both digests and the reason:
+#
+#   <digest the mirror serves> <older digest to promote>  # reason
+#
+# A line allows that one step only. Remove it once the rollback is promoted,
+# or the same step stays allowed.
