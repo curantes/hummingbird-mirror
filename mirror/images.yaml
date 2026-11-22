@@ -105,7 +105,7 @@ images:
 
   # --- Developer Tools ---
   - name: curl
-    source: registry.access.redhat.com/hi/curl:8@sha256:8e1559b1d65d06df2f3c1be7141b296c97fad72ae3347a761f98b77236b0f75a
+    source: registry.access.redhat.com/hi/curl:8@sha256:fc57eec4709a0dcf3bfac44c7fc72e964f202b21af74a87209f0df978fe0da64
   - name: curl
     source: registry.access.redhat.com/hi/curl:8-builder@sha256:13d26831c2bf31bc91a53b83fed9ac9286dea1702bddf9cd57ce898a4636150b
 
