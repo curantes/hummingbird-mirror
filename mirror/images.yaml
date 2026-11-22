@@ -112,7 +112,7 @@ images:
   - name: git
     source: registry.access.redhat.com/hi/git:2@sha256:2eeab299ee01453d643f7f85ccf32c67012640af4d6991e475d7a88787628c28
   - name: git
-    source: registry.access.redhat.com/hi/git:2-builder@sha256:fb7d055876d1f4a8577030885e884a04fe34e56529b256fa2216a3fbf07a0aa6
+    source: registry.access.redhat.com/hi/git:2-builder@sha256:702c9a219a11d4288172ba399aa6516202013c48b6a214e15547c2255b1f9ed7
 
   # --- Messaging ---
   - name: rabbitmq
