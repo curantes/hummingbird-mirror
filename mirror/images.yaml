@@ -102,6 +102,10 @@ images:
     source: registry.access.redhat.com/hi/valkey:9.0@sha256:5f831a227c0b6a3e5ac4bd3bad065d6157fc7ffd78ff82c09fb66aacf5b508b0
   - name: valkey
     source: registry.access.redhat.com/hi/valkey:9.0-builder@sha256:07a7da14c2d72c3e0fb6b8f4c2ff0cac24caff39cb29854e776092179453bbcf
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:9.1@sha256:a64c653599010fc7e7bea7d3a56fb0330c62ffdde80434e5a55ad5f5d7ef96b4
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:9.1-builder@sha256:ee0125e7bd2507b599e31c59dfc73135c28709daa4428d03fea012401e76997e
 
   # --- Developer Tools ---
   - name: curl
