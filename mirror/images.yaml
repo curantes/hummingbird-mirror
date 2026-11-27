@@ -142,7 +142,7 @@ images:
 
   # --- Networking ---
   - name: coredns
-    source: registry.access.redhat.com/hi/coredns:1.15@sha256:34c621f8a9eec0cad8dedab9d580b177fbd16895f5b96388c9051d3a873552c9
+    source: registry.access.redhat.com/hi/coredns:1.15@sha256:065c773c066280fe3e875f39de7b767ba8825320df8fe0296215cc22facc12ef
   - name: coredns
     source: registry.access.redhat.com/hi/coredns:1.15-builder@sha256:765504d4409ff6e58d3a8988959889040059f9ed516bdfeba2039d3dd631e41e
 
