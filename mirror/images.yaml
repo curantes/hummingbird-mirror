@@ -96,7 +96,7 @@ images:
   - name: etcd
     source: registry.access.redhat.com/hi/etcd:3.7@sha256:284405e826bc906653a3a52e579c1483706bb0b98c020a28147fe8c88f1fcf5a
   - name: etcd
-    source: registry.access.redhat.com/hi/etcd:3.7-builder@sha256:52eb0787aca84505beb76e288a991b954bc6dcfd533ddecb44464bcf059246b7
+    source: registry.access.redhat.com/hi/etcd:3.7-builder@sha256:02b53c75358df6dad5a1443b109343c993261d8aaa14c2f92839bdd7dfa921c5
 
   - name: valkey
     source: registry.access.redhat.com/hi/valkey:7.2@sha256:ee847f48315cd178738de5244ae227feb396984a6bc703dc91fd6c3393fadca3
