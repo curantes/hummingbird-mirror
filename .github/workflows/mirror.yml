@@ -182,6 +182,9 @@ jobs:
       - name: Test the Vulnerability Gate
         run: .github/scripts/tests/vuln-gate-test.sh
 
+      - name: Test the Rollback Guard
+        run: .github/scripts/tests/rollback-guard-test.sh
+
       - name: Test the Upstream Key Verification
         run: .github/scripts/tests/verify-upstream-test.sh
 
@@ -298,7 +301,8 @@ jobs:
   # Re-audits and promotions run unattended (Renovate automerges digest
   # refreshes), so track failures in one issue. Vulnerabilities in an
   # approved digest are reported, not failed, so the issue marks real
-  # failures: signature, tests, package detection, regressions, promotion.
+  # failures: signature, tests, package detection, regressions, rollbacks,
+  # promotion.
   # Pushes retry entries not promoted yet but don't recheck approved
   # digests, so only a full run (weekly re-audit or manual) closes it.
   alert:
@@ -359,5 +363,5 @@ jobs:
             gh label create "$LABEL" --color B60205 --description "Mirror re-audit or promotion failed" --force
             gh issue create --title "Mirror run failing on main" --label "$LABEL" --body "$MESSAGE
 
-          An approved digest may have failed re-verification, its tests or package detection, a pinned digest may add fixable HIGH/CRITICAL vulnerabilities that the mirrored one does not have, or a promotion did not complete. Mirror tags stay on the last approved digest until a run passes. Pushes retry entries that aren't promoted yet but don't recheck approved digests, so run the workflow manually to re-check every entry. This issue closes automatically when the next full run (manual or weekly re-audit) passes."
+          An approved digest may have failed re-verification, its tests or package detection, a pinned digest may add fixable HIGH/CRITICAL vulnerabilities that the mirrored one does not have or be an older build, or a promotion did not complete. Mirror tags stay on the last approved digest until a run passes. Pushes retry entries that aren't promoted yet but don't recheck approved digests, so run the workflow manually to re-check every entry. This issue closes automatically when the next full run (manual or weekly re-audit) passes."
           fi

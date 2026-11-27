@@ -293,6 +293,20 @@ jobs:
           fi
           docker tag "$MIRROR_IMAGE@$BASELINE" "$BASELINE_IMAGE"
 
+      # An older build passes every other check: it is signed, in the stream
+      # and often has no new findings. See .github/scripts/rollback-guard.sh.
+      - name: Rollback Guard
+        id: rollback-guard
+        if: needs.verify.outputs.mode == 'refresh'
+        run: |
+          docker image inspect "$TEST_IMAGE" > "$RUNNER_TEMP/new.inspect.json"
+          docker image inspect "$BASELINE_IMAGE" > "$RUNNER_TEMP/baseline.inspect.json"
+          .github/scripts/rollback-guard.sh \
+            --new "$RUNNER_TEMP/new.inspect.json" --new-digest "$DIGEST" \
+            --baseline "$RUNNER_TEMP/baseline.inspect.json" --baseline-digest "$BASELINE" \
+            --allow mirror/allowed-rollbacks.txt \
+            --summary "$GITHUB_STEP_SUMMARY" --label "$NAME:$TAG ($ARCH)"
+
       - name: Generate Baseline SBOM
         id: baseline-sbom
         if: needs.verify.outputs.mode == 'refresh'

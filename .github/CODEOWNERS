@@ -1,11 +1,14 @@
 # Changes to the pipeline, the consumer policy and the tests decide what the
 # mirror serves and what its VSA means.
 #
-# mirror/ has no owner on purpose. GitHub requests a review from the owner on
-# every PR that touches an owned path, and Renovate automerges dozens of
-# digest refreshes a day, so each one notified the owner. Renovate requests a
-# review itself when the checks of a refresh fail (`reviewers` in
-# renovate.json5), and the Streams workflow does for the PRs it opens.
+# mirror/ has no owner on purpose, except the list of allowed rollbacks,
+# which switches a check off and which digest refreshes never touch. GitHub
+# requests a review from the owner on every PR that touches an owned path,
+# and Renovate automerges dozens of digest refreshes a day, so each one
+# notified the owner. Renovate requests a review itself when the checks of a
+# refresh fail (`reviewers` in renovate.json5), and the Streams
+# workflow does for the PRs it opens.
 /.github/ @curantes
 /policy/  @curantes
 /tests/   @curantes
+/mirror/allowed-rollbacks.txt @curantes
