@@ -119,7 +119,7 @@ images:
   - name: valkey
     source: registry.access.redhat.com/hi/valkey:9.1-builder@sha256:ee0125e7bd2507b599e31c59dfc73135c28709daa4428d03fea012401e76997e
   - name: valkey
-    source: registry.access.redhat.com/hi/valkey:9.2@sha256:b71123fb902f61e3f19fca09f28ff5ff0b53ac4ed8149678c905af9852c097cc
+    source: registry.access.redhat.com/hi/valkey:9.2@sha256:5a5563ad608779f82227b1ebb3992464c1f5042296c35d51f66ce245eae7b9df
   - name: valkey
     source: registry.access.redhat.com/hi/valkey:9.2-builder@sha256:827775acad12ffe8fd849e5f2b427ea5eb61b8fc476b84a8e0c5016df3b68195
 
