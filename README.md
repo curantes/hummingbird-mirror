@@ -74,8 +74,8 @@ The tables list one tag per mirrored stream: the tag that moves with that stream
 |---|---|---|---|
 | [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3.7` | etcd, etcdctl and etcdutl; client port 2379, peer port 2380, data in `/var/lib/etcd`; distroless, no shell | 65532 |
 | [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3.7-builder` | the above plus bash, curl and dnf | 65532 |
-| [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `8.0`, `8.1`, `9.0`, `9.1`, `9.2` | Valkey server and CLI on port 6379, data in `/data`; runs without a configuration, so protected mode refuses remote clients until you set a password (`--requirepass`) or mount one; ships bash | 65532 |
-| [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `8.0-builder`, `8.1-builder`, `9.0-builder`, `9.1-builder`, `9.2-builder` | the above plus curl and dnf | 65532 |
+| [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `7.2`, `8.0`, `8.1`, `9.0`, `9.1`, `9.2` | Valkey server and CLI on port 6379, data in `/data`; runs without a configuration, so protected mode refuses remote clients until you set a password (`--requirepass`) or mount one; ships bash | 65532 |
+| [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `7.2-builder`, `8.0-builder`, `8.1-builder`, `9.0-builder`, `9.1-builder`, `9.2-builder` | the above plus curl and dnf | 65532 |
 
 ### Developer Tools
 
