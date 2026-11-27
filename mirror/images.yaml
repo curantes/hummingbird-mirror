@@ -99,13 +99,21 @@ images:
     source: registry.access.redhat.com/hi/etcd:3.7-builder@sha256:52eb0787aca84505beb76e288a991b954bc6dcfd533ddecb44464bcf059246b7
 
   - name: valkey
+    source: registry.access.redhat.com/hi/valkey:8.1@sha256:ada85680db8ad468008512d7d970aa173e08b413ef2e782e33a9cbe7e2107b36
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:8.1-builder@sha256:db4029b35789a73789e8674540e763a3f14b1c2e59917bc75fcb088fc4268194
+  - name: valkey
     source: registry.access.redhat.com/hi/valkey:9.0@sha256:5f831a227c0b6a3e5ac4bd3bad065d6157fc7ffd78ff82c09fb66aacf5b508b0
   - name: valkey
     source: registry.access.redhat.com/hi/valkey:9.0-builder@sha256:07a7da14c2d72c3e0fb6b8f4c2ff0cac24caff39cb29854e776092179453bbcf
   - name: valkey
-    source: registry.access.redhat.com/hi/valkey:8.1@sha256:ada85680db8ad468008512d7d970aa173e08b413ef2e782e33a9cbe7e2107b36
+    source: registry.access.redhat.com/hi/valkey:9.1@sha256:a64c653599010fc7e7bea7d3a56fb0330c62ffdde80434e5a55ad5f5d7ef96b4
   - name: valkey
-    source: registry.access.redhat.com/hi/valkey:8.1-builder@sha256:db4029b35789a73789e8674540e763a3f14b1c2e59917bc75fcb088fc4268194
+    source: registry.access.redhat.com/hi/valkey:9.1-builder@sha256:ee0125e7bd2507b599e31c59dfc73135c28709daa4428d03fea012401e76997e
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:9.2@sha256:b71123fb902f61e3f19fca09f28ff5ff0b53ac4ed8149678c905af9852c097cc
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:9.2-builder@sha256:9e449db0dcae1f76ad95ce3ce97a4a4248a92c9ca9e041bdbfa3868ce92df4bb
 
   # --- Developer Tools ---
   - name: curl
