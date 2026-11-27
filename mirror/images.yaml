@@ -58,7 +58,7 @@ images:
     source: registry.access.redhat.com/hi/openjdk:25-builder@sha256:9de11623f70173be2901911776631d0fdbfd3bc2e439213917bc826d52d6c7c0
 
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5@sha256:c8dbd7a7ef3db516a8de45e5a913c3c57b1acf818944228808183536799abbcf
+    source: registry.access.redhat.com/hi/php:8.5@sha256:f2fd8361d69e7533ca755a0aa5048889f88c9ea680ddc5d2b84e692d1abc5cbc
   - name: php
     source: registry.access.redhat.com/hi/php:8.5-builder@sha256:374375f60713e53dc87c074558d5792e005508954a72874e209122acd0c6417e
   - name: php
