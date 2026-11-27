@@ -19,9 +19,13 @@ trap cleanup EXIT
 run() { "$ENGINE" run --rm "$IMAGE" "$@"; }
 fails() { ! "$ENGINE" run --rm --entrypoint "$1" "$IMAGE" "${@:2}" > /dev/null 2>&1; }
 
-# valkey-cli authenticates from VALKEYCLI_AUTH once a password is set.
+# valkey-cli authenticates from the environment once a password is set:
+# 9.0 and later read VALKEYCLI_AUTH, older releases only REDISCLI_AUTH.
 PASSWORD=""
-cli() { "$ENGINE" exec ${PASSWORD:+-e "VALKEYCLI_AUTH=$PASSWORD"} "$CONTAINER" valkey-cli "$@"; }
+cli() {
+  "$ENGINE" exec ${PASSWORD:+-e "VALKEYCLI_AUTH=$PASSWORD" -e "REDISCLI_AUTH=$PASSWORD"} \
+    "$CONTAINER" valkey-cli "$@"
+}
 
 # Sends raw RESP commands to the published port and prints the first $1
 # reply bytes without carriage returns.
@@ -57,7 +61,8 @@ fi
 
 echo "Testing Valkey version ($STREAM.x)..."
 OUT="$(run --version)"
-if [[ "$OUT" != "Valkey server v=$STREAM."* ]]; then
+# 7.2 prints "Server v=…" without the product name.
+if [[ "$OUT" != "Valkey server v=$STREAM."* && "$OUT" != "Server v=$STREAM."* ]]; then
   echo "Unexpected version: $OUT (expected v=$STREAM.x)"
   exit 1
 fi
