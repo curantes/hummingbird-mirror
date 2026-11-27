@@ -60,7 +60,7 @@ images:
   - name: php
     source: registry.access.redhat.com/hi/php:8.5@sha256:c8dbd7a7ef3db516a8de45e5a913c3c57b1acf818944228808183536799abbcf
   - name: php
-    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:dd077404cc25820eaeb72f2b9a992bf4813c7d95c69b5ee8df2d2aca161db24f
+    source: registry.access.redhat.com/hi/php:8.5-builder@sha256:374375f60713e53dc87c074558d5792e005508954a72874e209122acd0c6417e
   - name: php
     source: registry.access.redhat.com/hi/php:8.5-fpm@sha256:24605477890bb2240df5799040c8d89243c8a32cb47b12c3720dd7a81fae58be
   - name: php
@@ -99,9 +99,29 @@ images:
     source: registry.access.redhat.com/hi/etcd:3.7-builder@sha256:52eb0787aca84505beb76e288a991b954bc6dcfd533ddecb44464bcf059246b7
 
   - name: valkey
+    source: registry.access.redhat.com/hi/valkey:7.2@sha256:ee847f48315cd178738de5244ae227feb396984a6bc703dc91fd6c3393fadca3
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:7.2-builder@sha256:f701935fa346ddd446f98e862ec4a3a5767c441152a30b906597e00c7406ffb5
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:8.0@sha256:12393580f26b2aae81b73233ac1d4da47d6b8125146b4c81afa7b651fbf1cb0a
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:8.0-builder@sha256:4e6193e32a9f91e675aad09fb0c9e935c84867ab2ef15c03661352289f559b24
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:8.1@sha256:ada85680db8ad468008512d7d970aa173e08b413ef2e782e33a9cbe7e2107b36
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:8.1-builder@sha256:db4029b35789a73789e8674540e763a3f14b1c2e59917bc75fcb088fc4268194
+  - name: valkey
     source: registry.access.redhat.com/hi/valkey:9.0@sha256:5f831a227c0b6a3e5ac4bd3bad065d6157fc7ffd78ff82c09fb66aacf5b508b0
   - name: valkey
     source: registry.access.redhat.com/hi/valkey:9.0-builder@sha256:07a7da14c2d72c3e0fb6b8f4c2ff0cac24caff39cb29854e776092179453bbcf
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:9.1@sha256:a64c653599010fc7e7bea7d3a56fb0330c62ffdde80434e5a55ad5f5d7ef96b4
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:9.1-builder@sha256:ee0125e7bd2507b599e31c59dfc73135c28709daa4428d03fea012401e76997e
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:9.2@sha256:b71123fb902f61e3f19fca09f28ff5ff0b53ac4ed8149678c905af9852c097cc
+  - name: valkey
+    source: registry.access.redhat.com/hi/valkey:9.2-builder@sha256:9e449db0dcae1f76ad95ce3ce97a4a4248a92c9ca9e041bdbfa3868ce92df4bb
 
   # --- Developer Tools ---
   - name: curl
@@ -128,7 +148,7 @@ images:
 
   # --- Web Services ---
   - name: haproxy
-    source: registry.access.redhat.com/hi/haproxy:3.0@sha256:5556c809d8444b379d717ceb5b7819ad7d8874ff7e8d9ed13e0215425b61fe40
+    source: registry.access.redhat.com/hi/haproxy:3.0@sha256:a7f96aa281761197148ef7e24c8fe75b8e4569ad1d651514a00213ee76941551
   - name: haproxy
     source: registry.access.redhat.com/hi/haproxy:3.0-builder@sha256:79564a26d308bf79f7c173d7ad2b4547e07b90d3c932e8685b9920eec93a9cbe
 

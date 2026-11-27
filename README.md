@@ -20,6 +20,7 @@ What you get from the mirror:
 - **Verified origin.** The Red Hat signature and SBOM attestation are verified before the copy and again on the mirror, and they are copied along with the image.
 - **Tested on both architectures.** Sanity tests and a Grype scan run natively on amd64 and arm64.
 - **A vulnerability gate.** A new stream must have no fixable HIGH or CRITICAL findings, and a refresh must not add any. See [Vulnerability Gate](#vulnerability-gate) and [Known Limitations](#known-limitations).
+- **No silent rollbacks.** A refresh to an older build than the mirrored one fails. See [Rollback Guard](#rollback-guard).
 - **A signed approval.** Every promoted digest carries our VSA, signed without a long-lived key through the identity of the promotion workflow. Tags move only after it exists. All approvals are listed under [Attestations](https://github.com/curantes/hummingbird-mirror/attestations).
 - **Enforcement at admission.** A Kyverno policy, tested in a cluster, admits only images that have both. See [Verifying Images](#verifying-images).
 
@@ -74,8 +75,8 @@ The tables list one tag per mirrored stream: the tag that moves with that stream
 |---|---|---|---|
 | [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3.7` | etcd, etcdctl and etcdutl; client port 2379, peer port 2380, data in `/var/lib/etcd`; distroless, no shell | 65532 |
 | [`etcd`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fetcd) | `3.7-builder` | the above plus bash, curl and dnf | 65532 |
-| [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `9.0` | Valkey server and CLI on port 6379, data in `/data`; runs without a configuration, so protected mode refuses remote clients until you set a password (`--requirepass`) or mount one; ships bash | 65532 |
-| [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `9.0-builder` | the above plus curl and dnf | 65532 |
+| [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `7.2`, `8.0`, `8.1`, `9.0`, `9.1`, `9.2` | Valkey server and CLI on port 6379, data in `/data`; runs without a configuration, so protected mode refuses remote clients until you set a password (`--requirepass`) or mount one; ships bash | 65532 |
+| [`valkey`](https://github.com/curantes/hummingbird-mirror/pkgs/container/hummingbird-mirror%2Fvalkey) | `7.2-builder`, `8.0-builder`, `8.1-builder`, `9.0-builder`, `9.1-builder`, `9.2-builder` | the above plus curl and dnf | 65532 |
 
 ### Developer Tools
 
@@ -153,6 +154,7 @@ ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 2. **Test and scan** natively on amd64 and arm64:
    - sanity tests from `tests/<name>/test.sh`
    - a Syft SBOM, with a check that Hummingbird OS and its RPMs are detected
+   - on a refresh, the rollback guard described below
    - a Grype scan and the vulnerability gate described below
 3. **Promote** (on `main` only: manual runs, and pushes and scheduled runs for entries whose stream tag doesn't point at the pinned digest yet):
    1. Copy the image by digest with `regctl image copy --referrers`, plus the upstream cosign `.sig`/`.att`/`.sbom` tags. This keeps their Sigstore bundle referrers, including the SBOM attestation that cosign 3 verifies.
@@ -177,6 +179,16 @@ The gate counts **fixable HIGH and CRITICAL** findings: Grype matches of that se
 A refresh is compared with the baseline because upstream rebuilds often still carry a few fixable findings. Rejecting such a rebuild would leave the mirror on the older digest, which has more. Both images are scanned in the same job with the same Grype database, and a finding is identified by vulnerability ID, package name and package type, so a package update that still carries the same CVE isn't counted as new. The logic lives in [`.github/scripts/vuln-gate.sh`](.github/scripts/vuln-gate.sh) and has fixture tests.
 
 The weekly run reports the findings of approved digests without failing on them. It still fails, and opens a `mirror-alert` issue, when a signature, a test or package detection fails.
+
+### Rollback Guard
+
+Upstream tags can move back to an older build, and Renovate proposes whatever they point at. A refresh therefore fails when its `org.opencontainers.image.created` label is earlier than that of the baseline, on either architecture, or when either label can't be read. The logic lives in [`.github/scripts/rollback-guard.sh`](.github/scripts/rollback-guard.sh).
+
+To roll back on purpose, add a line to [`mirror/allowed-rollbacks.txt`](mirror/allowed-rollbacks.txt) in the PR that changes the digest, and remove it once the rollback is promoted:
+
+```
+<digest the mirror serves> <older digest to promote>  # reason
+```
 
 ### Reports
 
@@ -226,6 +238,7 @@ The VSA lists what was checked in `verifiedLevels`: `UPSTREAM_SIGNATURE_VERIFIED
 - The Red Hat SLSA provenance on `registry.access.redhat.com` can't be verified with their published keys. We verify their signature and SBOM attestation instead.
 - The VSA records our checks as custom `verifiedLevels`. We don't claim an upstream SLSA build level.
 - A mirrored image can have fixable HIGH/CRITICAL vulnerabilities. A refresh only has to be no worse than the digest it replaces, and vulnerabilities disclosed after promotion don't remove an image. Scan the digests you deploy.
+- The rollback guard compares build times, not versions, and only on a refresh. A rebuild of older software with a later build time passes, and so does a first promotion, which has nothing to compare with.
 - The VSA means "passed our checks at promotion time". It doesn't expire and isn't withdrawn when new vulnerabilities are disclosed. VSAs issued before the regression gate carry `NO_FIXABLE_HIGH_OR_CRITICAL_VULNERABILITIES` and no `vulnerabilityGate` field.
 
 ## Running Tests Locally
