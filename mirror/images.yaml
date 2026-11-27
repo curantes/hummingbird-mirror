@@ -153,6 +153,6 @@ images:
     source: registry.access.redhat.com/hi/haproxy:3.0-builder@sha256:79564a26d308bf79f7c173d7ad2b4547e07b90d3c932e8685b9920eec93a9cbe
 
   - name: nginx
-    source: registry.access.redhat.com/hi/nginx:1@sha256:492b997b5a4cb6925fcb5d2d133c58b9aa8d3c75b50ef83d5ad2ef354990086a
+    source: registry.access.redhat.com/hi/nginx:1@sha256:109db60921444e9a6b8b192192fb3aeb253a638421c0ec8c124790cd4852fe66
   - name: nginx
     source: registry.access.redhat.com/hi/nginx:1-builder@sha256:a99e937741ef377ca81bc8fe6ab42fd1826280428ddb456386fb0bafccc6c3a5
