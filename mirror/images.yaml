@@ -130,7 +130,7 @@ images:
     source: registry.access.redhat.com/hi/curl:8-builder@sha256:b7a77903d7fb22186f6d3647e2c0509a38f83ed81c5a43a6cd1ff16a2b225201
 
   - name: git
-    source: registry.access.redhat.com/hi/git:2@sha256:d60b3063f15490eba1d4083011d431326c717d7fab665ed1a0a601e0d9fcdf00
+    source: registry.access.redhat.com/hi/git:2@sha256:f97f049bc43b81b36270f2e1501f990ffbde8a3de8d80e5d385361682f2fdc24
   - name: git
     source: registry.access.redhat.com/hi/git:2-builder@sha256:6eb96e2a3bd9f05db5f4bd0384694a26c36441313795794f247142488806bef7
 
