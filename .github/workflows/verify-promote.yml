@@ -533,12 +533,14 @@ jobs:
           done
           .github/scripts/verify-upstream.sh sbom "$MIRROR_IMAGE@$DIGEST" "$UPSTREAM_KEYS"
 
+      # --cert-identity is matched exactly. --signer-workflow without a ref
+      # would also accept a VSA signed by this workflow on any other branch.
       - name: Check for Existing Approval
         id: approval
         run: |
           if gh attestation verify "oci://$MIRROR_IMAGE@$DIGEST" --bundle-from-oci \
               --repo "$GITHUB_REPOSITORY" \
-              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/verify-promote.yml" \
+              --cert-identity "https://github.com/$GITHUB_REPOSITORY/.github/workflows/verify-promote.yml@refs/heads/main" \
               --predicate-type "$VSA_PREDICATE" > /dev/null 2>&1; then
             echo "approved=true" >> "$GITHUB_OUTPUT"
             echo "Digest already approved; skipping a new verification summary"
