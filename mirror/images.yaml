@@ -16,7 +16,7 @@
 images:
   # --- Operating System ---
   - name: core-runtime
-    source: registry.access.redhat.com/hi/core-runtime:latest@sha256:fe49c1e94db2743f99ea08d7bec7b7326595130463f76dd32308e6e122361149
+    source: registry.access.redhat.com/hi/core-runtime:latest@sha256:b89211eabec2378de257b754643579aabb9b87bc67ed8411dcef0b9ef8142d68
 
   - name: static
     source: registry.access.redhat.com/hi/static:latest@sha256:cac22d5a26d90c14801f8e48cc99dcb8a08f270cdc9ebaa205ac5b29f8a3d2fa
